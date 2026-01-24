@@ -1,0 +1,71 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Production builds
+.next
+dist
+build
+out
+
+# Environment variables
+.env
+.env.local
+.env*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+DEPLOYMENT.md
+*.md
+
+# Deployment files (not needed in container)
+nginx/
+scripts/
+ecosystem.config.js
+
+# Source files (only built files are needed in final stage)
+frontend/src
+backend/src
+frontend/app
+frontend/components
+frontend/hooks
+frontend/lib
+frontend/store
+frontend/types
+
+# Development files
+tsconfig.json
+jest.config.*
+.eslintrc*

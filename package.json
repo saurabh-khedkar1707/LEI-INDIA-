@@ -1,0 +1,28 @@
+{
+  "name": "leiindias-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build": "pnpm --filter frontend build && pnpm --filter backend build",
+    "build:prod": "NODE_ENV=production pnpm --filter frontend build && NODE_ENV=production pnpm --filter backend build",
+    "start:prod": "pm2 start ecosystem.config.js --env production",
+    "stop:prod": "pm2 stop ecosystem.config.js",
+    "reload:prod": "pm2 reload ecosystem.config.js --env production",
+    "restart:prod": "pm2 restart ecosystem.config.js --env production",
+    "logs:prod": "pm2 logs",
+    "deploy": "bash scripts/deploy.sh",
+    "lint": "pnpm --filter frontend lint"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
+
