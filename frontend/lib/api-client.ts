@@ -32,8 +32,11 @@ class ApiClient {
 
   // Get headers with authentication and CSRF token
   private getHeaders(csrfToken: string | null, customHeaders?: HeadersInit): HeadersInit {
-    const headers: HeadersInit = {
-      ...customHeaders,
+    const headers: Record<string, string> = {}
+
+    // Start with custom headers if they exist and are a plain object
+    if (customHeaders && typeof customHeaders === 'object' && !Array.isArray(customHeaders) && !(customHeaders instanceof Headers)) {
+      Object.assign(headers, customHeaders)
     }
 
     // Add CSRF token if available

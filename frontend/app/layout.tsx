@@ -1,9 +1,9 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary"
 
-const inter = Inter({ subsets: ["latin"] })
+// Use system font stack as fallback for Inter
+const fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
 
 export const metadata: Metadata = {
   title: {
@@ -39,7 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body style={{ fontFamily }}>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

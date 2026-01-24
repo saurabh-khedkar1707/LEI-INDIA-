@@ -26,8 +26,9 @@ async function getProducts(): Promise<Product[]> {
 
   try {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products?limit=6`, {
-      cache: 'no-store',
-      // Add timeout for Vercel builds
+      // Use force-cache for static generation, no-store would cause dynamic rendering
+      cache: 'force-cache',
+      // Add timeout for builds
       signal: AbortSignal.timeout(5000), // 5 second timeout
     })
     if (!response.ok) {
@@ -36,7 +37,7 @@ async function getProducts(): Promise<Product[]> {
     const data = await response.json()
     return Array.isArray(data) ? data : (data.products || [])
   } catch (error) {
-    console.warn('Failed to fetch products for homepage:', error.message)
+    console.warn('Failed to fetch products for homepage:', error instanceof Error ? error.message : String(error))
     // Return empty array to prevent build failures
     return []
   }

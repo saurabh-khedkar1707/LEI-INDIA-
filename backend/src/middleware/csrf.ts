@@ -90,12 +90,19 @@ const getSessionId = (req: Request): string => {
   // For unauthenticated requests, use IP + User-Agent
   // Normalize IP to handle IPv6 and proxy variations
   let ip = req.ip || req.socket.remoteAddress || req.headers['x-forwarded-for'] || 'unknown'
-  
+
+  // Ensure ip is a string
+  if (Array.isArray(ip)) {
+    ip = ip[0] || 'unknown'
+  } else if (typeof ip !== 'string') {
+    ip = String(ip)
+  }
+
   // Extract first IP if x-forwarded-for contains multiple IPs
-  if (typeof ip === 'string' && ip.includes(',')) {
+  if (ip.includes(',')) {
     ip = ip.split(',')[0].trim()
   }
-  
+
   // Normalize IPv6 addresses
   if (ip.startsWith('::ffff:')) {
     ip = ip.substring(7)
