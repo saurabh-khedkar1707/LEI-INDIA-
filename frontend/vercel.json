@@ -1,15 +1,9 @@
 {
-  "buildCommand": "cd ../.. && pnpm install && cd frontend && pnpm build",
-  "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
-  ]
+  }
 }
