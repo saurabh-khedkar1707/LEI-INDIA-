@@ -1,9 +1,9 @@
 {
   "build": {
-    "buildCommand": "pnpm install && pnpm build"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "pnpm start:prod",
+    "startCommand": "cd backend && ./start.sh",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
