@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { requireAdmin } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 const inquirySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').trim(),
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.error('Error creating inquiry:', error)
+    log.error('Error creating inquiry', error)
     return NextResponse.json(
       { error: 'Failed to submit inquiry' },
       { status: 400 },
@@ -77,7 +78,7 @@ export const GET = requireAdmin(async (req: NextRequest) => {
 
     return NextResponse.json(result.rows)
   } catch (error) {
-    console.error('Error fetching inquiries:', error)
+    log.error('Error fetching inquiries', error)
     return NextResponse.json(
       { error: 'Failed to fetch inquiries' },
       { status: 500 },

@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth-middleware'
 import { sanitizeRichText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rate-limit'
 import { csrfProtection } from '@/lib/csrf'
+import { log } from '@/lib/logger'
 
 // Helper function to generate slug from title
 function generateSlug(title: string): string {
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     )
     return NextResponse.json(result.rows)
   } catch (error) {
-    console.error('Failed to fetch blogs:', error)
+    log.error('Failed to fetch blogs', error)
     return NextResponse.json(
       { error: 'Failed to fetch blogs' },
       { status: 500 },
@@ -136,7 +137,7 @@ export const POST = requireAdmin(async (req: NextRequest) => {
       )
     }
 
-    console.error('Error creating blog:', error)
+    log.error('Error creating blog', error)
     return NextResponse.json(
       { error: 'Failed to create blog' },
       { status: 400 },

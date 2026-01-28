@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { checkAdmin } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 const inquiryUpdateSchema = z.object({
   read: z.boolean().optional(),
@@ -35,7 +36,7 @@ export async function GET(
     }
     return NextResponse.json(inquiry)
   } catch (error) {
-    console.error('Error fetching inquiry:', error)
+    log.error('Error fetching inquiry', error)
     return NextResponse.json(
       { error: 'Failed to fetch inquiry' },
       { status: 500 },
@@ -88,7 +89,7 @@ export async function PUT(
       )
     }
 
-    console.error('Error updating inquiry:', error)
+    log.error('Error updating inquiry', error)
     return NextResponse.json(
       { error: 'Failed to update inquiry' },
       { status: 400 },
@@ -113,7 +114,7 @@ export async function DELETE(
     )
     return NextResponse.json({ message: 'Inquiry deleted successfully' })
   } catch (error) {
-    console.error('Error deleting inquiry:', error)
+    log.error('Error deleting inquiry', error)
     return NextResponse.json(
       { error: 'Failed to delete inquiry' },
       { status: 500 },

@@ -61,23 +61,18 @@ export async function POST(req: NextRequest) {
       [user.id, resetToken, expiresAt],
     )
 
-    // Send email with reset link
+    // Email service disabled - reset token is generated but email is not sent
+    // Admin can provide the reset link to users manually
     const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
-    const { sendEmail, generatePasswordResetEmail } = await import('@/lib/email')
-    const emailContent = generatePasswordResetEmail(resetLink, user.name)
-    
-    await sendEmail({
-      to: user.email,
-      subject: emailContent.subject,
-      html: emailContent.html,
-      text: emailContent.text,
-    }).catch((error) => {
-      // Log error but don't fail the request (security: don't reveal if email exists)
-      log.error('Failed to send password reset email', error, { email: data.email })
+    log.info('Password reset token generated', { 
+      email: data.email,
+      resetLink,
+      expiresAt: expiresAt.toISOString()
     })
 
     return NextResponse.json({
       message: 'If an account exists with this email, a password reset link has been sent.',
+      // Note: Email service is disabled - reset link is logged for admin reference
     })
   } catch (error: any) {
     if (error?.name === 'ZodError') {

@@ -15,45 +15,20 @@ interface EmailOptions {
 
 /**
  * Send an email using the configured email service
- * In development, logs to console. In production, uses configured service.
+ * Currently disabled - emails are only logged, not sent
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const { to, subject, html, text } = options
 
-  // In development, log email details
-  if (process.env.NODE_ENV === 'development' || !process.env.EMAIL_SERVICE) {
-    log.info('📧 EMAIL (Development Mode)', { to, subject, body: text || html })
-    return
-  }
-
-  const emailService = process.env.EMAIL_SERVICE.toLowerCase()
-
-  try {
-    switch (emailService) {
-      case 'resend':
-        await sendViaResend(options)
-        break
-      case 'sendgrid':
-        await sendViaSendGrid(options)
-        break
-      case 'ses':
-      case 'aws-ses':
-        await sendViaSES(options)
-        break
-      case 'nodemailer':
-        await sendViaNodemailer(options)
-        break
-      default:
-        log.warn(`Unknown email service: ${emailService}. Logging email details.`, { to, subject })
-    }
-  } catch (error) {
-    log.error('Failed to send email', error)
-    // In production, you might want to throw or queue for retry
-    // For now, we'll log and continue to prevent blocking user flows
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Failed to send email')
-    }
-  }
+  // Email service is disabled - just log the email details
+  log.info('📧 EMAIL (Logging Only - Email Service Disabled)', { 
+    to, 
+    subject, 
+    body: text || html.substring(0, 200) + '...' // Truncate long HTML
+  })
+  
+  // Email service is disabled - no actual sending
+  return
 }
 
 /**

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import { categorySchema } from '@/lib/category-validation'
 import { requireAdmin } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 // GET /api/categories - public list of categories
 export async function GET(req: NextRequest) {
@@ -63,7 +64,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching categories:', error)
+    log.error('Error fetching categories', error)
     return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 })
   }
 }
@@ -106,7 +107,7 @@ export const POST = requireAdmin(async (req: NextRequest) => {
       )
     }
 
-    console.error('Error creating category:', error)
+    log.error('Error creating category', error)
     return NextResponse.json({ error: 'Failed to create category' }, { status: 400 })
   }
 })

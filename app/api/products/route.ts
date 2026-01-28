@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth-middleware'
 import { sanitizeRichText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rate-limit'
 import { csrfProtection } from '@/lib/csrf'
+import { log } from '@/lib/logger'
 
 // GET /api/products - list products with pagination and filters
 export async function GET(req: NextRequest) {
@@ -152,7 +153,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error fetching products:', error)
+    log.error('Error fetching products', error)
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
   }
 }
@@ -246,7 +247,7 @@ export const POST = requireAdmin(async (req: NextRequest) => {
       )
     }
 
-    console.error('Error creating product:', error)
+    log.error('Error creating product', error)
     return NextResponse.json({ error: 'Failed to create product' }, { status: 400 })
   }
 })

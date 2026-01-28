@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { verifyToken } from '@/lib/jwt'
 import { requireAdmin, requireCustomer } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, 'Product ID is required'),
@@ -125,7 +126,7 @@ export const POST = requireCustomer(async (req: NextRequest) => {
       )
     }
 
-    console.error('Error creating order:', error)
+    log.error('Error creating order', error)
     return NextResponse.json(
       { error: 'Failed to create order' },
       { status: 400 },
@@ -170,7 +171,7 @@ export const GET = requireAdmin(async (req: NextRequest) => {
 
     return NextResponse.json(result.rows)
   } catch (error) {
-    console.error('Error fetching orders:', error)
+    log.error('Error fetching orders', error)
     return NextResponse.json(
       { error: 'Failed to fetch orders' },
       { status: 500 },

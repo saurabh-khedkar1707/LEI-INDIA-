@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html'
+import { log } from './logger'
 
 /**
  * Configuration for HTML sanitization
@@ -58,7 +59,7 @@ export function sanitizeHtmlContent(
     return sanitizeHtml(html, finalOptions)
   } catch (error) {
     // If sanitization fails, return empty string as safe fallback
-    console.error('HTML sanitization error:', error)
+    log.error('HTML sanitization error', error)
     return ''
   }
 }

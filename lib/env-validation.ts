@@ -21,9 +21,7 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional(),
   SENTRY_ENVIRONMENT: z.string().optional(),
   
-  // Email (optional - may not be implemented yet)
-  EMAIL_SERVICE_API_KEY: z.string().optional(),
-  EMAIL_FROM_ADDRESS: z.string().email().optional(),
+  // Email service is disabled - no email-related env vars needed
   
   // Rate Limiting (optional - uses in-memory fallback if not provided)
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
@@ -45,8 +43,6 @@ function validateEnv(): Env {
       LOG_LEVEL: process.env.LOG_LEVEL,
       SENTRY_DSN: process.env.SENTRY_DSN,
       SENTRY_ENVIRONMENT: process.env.SENTRY_ENVIRONMENT,
-      EMAIL_SERVICE_API_KEY: process.env.EMAIL_SERVICE_API_KEY,
-      EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
       UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
       UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
     })
@@ -79,8 +75,6 @@ export const {
   LOG_LEVEL,
   SENTRY_DSN,
   SENTRY_ENVIRONMENT,
-  EMAIL_SERVICE_API_KEY,
-  EMAIL_FROM_ADDRESS,
   UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN,
 } = env

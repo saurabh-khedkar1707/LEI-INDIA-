@@ -10,6 +10,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN npm install -g pnpm@9
+# Install wget for healthcheck
+RUN apk add --no-cache wget
 COPY package.json pnpm-lock.yaml* ./
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/.next ./.next

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import { requireAdmin } from '@/lib/auth-middleware'
 import { contactInfoSchema } from '@/lib/contact-info-validation'
+import { log } from '@/lib/logger'
 
 async function getOrCreateContactInfo() {
   const existing = await pgPool.query(
@@ -43,7 +44,7 @@ export async function GET(_req: NextRequest) {
     const contact = await getOrCreateContactInfo()
     return NextResponse.json(contact)
   } catch (error) {
-    console.error('Failed to fetch contact information:', error)
+    log.error('Failed to fetch contact information', error)
     return NextResponse.json(
       { error: 'Failed to fetch contact information' },
       { status: 500 },
@@ -105,7 +106,7 @@ export const PUT = requireAdmin(async (req: NextRequest) => {
       )
     }
 
-    console.error('Failed to update contact information:', error)
+    log.error('Failed to update contact information', error)
     return NextResponse.json(
       { error: 'Failed to update contact information' },
       { status: 400 },

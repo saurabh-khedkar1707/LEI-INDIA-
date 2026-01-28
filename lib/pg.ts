@@ -104,6 +104,12 @@ async function testConnection(): Promise<boolean> {
 // Shared Postgres connection pool for the entire app
 export const pgPool = new Pool({
   connectionString: DATABASE_URL,
+  // SSL Configuration:
+  // - For managed Postgres (AWS RDS, Heroku, etc.): Use proper CA certificates
+  // - For self-hosted with valid certificates: Set rejectUnauthorized: true with ca option
+  // - Current setting (rejectUnauthorized: false) is for development/testing only
+  // TODO: In production, use proper SSL certificates:
+  //   ssl: { rejectUnauthorized: true, ca: fs.readFileSync('/path/to/ca-cert.pem') }
   ssl: NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
   max: 20, // Maximum number of clients in the pool
   min: 2, // Minimum number of clients in the pool

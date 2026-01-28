@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import crypto from 'crypto'
+import { log } from '@/lib/logger'
 
 // GET /api/users/verify-email?token=... - verify email with token
 export async function GET(req: NextRequest) {
@@ -78,7 +79,7 @@ export async function GET(req: NextRequest) {
       verified: true,
     })
   } catch (error) {
-    console.error('Email verification error:', error)
+    log.error('Email verification error', error)
     return NextResponse.json(
       { error: 'Failed to verify email' },
       { status: 500 },
@@ -148,26 +149,21 @@ export async function POST(req: NextRequest) {
       [verificationToken, expiresAt, user.id],
     )
 
-    // Send email with verification link
+    // Email service disabled - verification token is generated but email is not sent
+    // Admin can provide the verification link to users manually
     const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-    const { sendEmail, generateVerificationEmail } = await import('@/lib/email')
-    const emailContent = generateVerificationEmail(verificationLink, user.name)
-    
-    await sendEmail({
-      to: user.email,
-      subject: emailContent.subject,
-      html: emailContent.html,
-      text: emailContent.text,
-    }).catch((error) => {
-      // Log error but don't fail the request
-      console.error('Failed to send verification email:', error)
+    log.info('Verification email resend - token generated', { 
+      email: email.toLowerCase().trim(),
+      verificationLink,
+      expiresAt: expiresAt.toISOString()
     })
 
     return NextResponse.json({
       message: 'If an account exists with this email, a verification link has been sent.',
+      // Note: Email service is disabled - verification link is logged for admin reference
     })
   } catch (error) {
-    console.error('Resend verification email error:', error)
+    log.error('Resend verification email error', error)
     return NextResponse.json(
       { error: 'Failed to resend verification email' },
       { status: 500 },

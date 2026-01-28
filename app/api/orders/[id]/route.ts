@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { checkAdmin } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 const orderUpdateSchema = z.object({
   status: z.enum(['pending', 'quoted', 'approved', 'rejected']).optional(),
@@ -57,7 +58,7 @@ export async function GET(
     }
     return NextResponse.json(order)
   } catch (error) {
-    console.error('Error fetching order:', error)
+    log.error('Error fetching order', error)
     return NextResponse.json(
       { error: 'Failed to fetch order' },
       { status: 500 },
@@ -132,7 +133,7 @@ export async function PUT(
       )
     }
 
-    console.error('Error updating order:', error)
+    log.error('Error updating order', error)
     return NextResponse.json(
       { error: 'Failed to update order' },
       { status: 400 },

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { pgPool } from '@/lib/pg'
 import { generateToken } from '@/lib/jwt'
 import { rateLimit } from '@/lib/rate-limit'
+import { log } from '@/lib/logger'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
@@ -102,7 +103,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.error('Login error:', error)
+    log.error('Login error', error)
     return NextResponse.json(
       { error: 'Failed to authenticate user' },
       { status: 500 },

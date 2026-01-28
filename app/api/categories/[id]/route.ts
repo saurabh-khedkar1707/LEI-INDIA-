@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import { categoryUpdateSchema } from '@/lib/category-validation'
 import { checkAdmin } from '@/lib/auth-middleware'
+import { log } from '@/lib/logger'
 
 // GET /api/categories/:id
 export async function GET(
@@ -26,7 +27,7 @@ export async function GET(
 
     return NextResponse.json(category)
   } catch (error) {
-    console.error('Error fetching category:', error)
+    log.error('Error fetching category', error)
     return NextResponse.json({ error: 'Failed to fetch category' }, { status: 500 })
   }
 }
@@ -94,7 +95,7 @@ export async function PUT(
       )
     }
 
-    console.error('Error updating category:', error)
+    log.error('Error updating category', error)
     return NextResponse.json({ error: 'Failed to update category' }, { status: 400 })
   }
 }
@@ -130,7 +131,7 @@ export async function DELETE(
     )
     return NextResponse.json({ message: 'Category deleted successfully' })
   } catch (error) {
-    console.error('Error deleting category:', error)
+    log.error('Error deleting category', error)
     return NextResponse.json({ error: 'Failed to delete category' }, { status: 500 })
   }
 }

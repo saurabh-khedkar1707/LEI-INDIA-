@@ -63,19 +63,13 @@ export async function POST(req: NextRequest) {
 
     const user = inserted.rows[0]
 
-    // Send verification email
+    // Email service disabled - verification token is generated but email is not sent
+    // Users can verify via the verify-email page with the token
     const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-    const { sendEmail, generateVerificationEmail } = await import('@/lib/email')
-    const emailContent = generateVerificationEmail(verificationLink, user.name)
-    
-    await sendEmail({
-      to: user.email,
-      subject: emailContent.subject,
-      html: emailContent.html,
-      text: emailContent.text,
-    }).catch((error) => {
-      // Log error but don't fail registration
-      log.error('Failed to send verification email', error, { userId: user.id, email: user.email })
+    log.info('User registered - verification token generated', { 
+      userId: user.id, 
+      email: user.email,
+      verificationLink 
     })
 
     const token = generateToken(user.email, 'customer')

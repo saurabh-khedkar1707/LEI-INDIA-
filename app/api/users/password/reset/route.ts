@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { pgPool } from '@/lib/pg'
+import { log } from '@/lib/logger'
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.error('Password reset error:', error)
+    log.error('Password reset error', error)
     return NextResponse.json(
       { error: 'Failed to reset password' },
       { status: 500 },

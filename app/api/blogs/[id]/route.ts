@@ -6,6 +6,7 @@ import { checkAdmin } from '@/lib/auth-middleware'
 import { sanitizeRichText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rate-limit'
 import { csrfProtection } from '@/lib/csrf'
+import { log } from '@/lib/logger'
 
 // Helper function to generate slug from title
 function generateSlug(title: string): string {
@@ -59,7 +60,7 @@ export async function GET(
 
     return NextResponse.json(blog)
   } catch (error) {
-    console.error('Failed to fetch blog:', error)
+    log.error('Failed to fetch blog', error)
     return NextResponse.json(
       { error: 'Failed to fetch blog' },
       { status: 500 },
@@ -198,7 +199,7 @@ export async function PUT(
       )
     }
 
-    console.error('Error updating blog:', error)
+    log.error('Error updating blog', error)
     return NextResponse.json(
       { error: 'Failed to update blog' },
       { status: 400 },
@@ -238,7 +239,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Blog deleted successfully' })
   } catch (error) {
-    console.error('Error deleting blog:', error)
+    log.error('Error deleting blog', error)
     return NextResponse.json(
       { error: 'Failed to delete blog' },
       { status: 500 },

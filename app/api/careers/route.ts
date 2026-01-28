@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth-middleware'
 import { sanitizeRichText } from '@/lib/sanitize'
 import { rateLimit } from '@/lib/rate-limit'
 import { csrfProtection } from '@/lib/csrf'
+import { log } from '@/lib/logger'
 
 // Helper function to generate slug from title
 function generateSlug(title: string): string {
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
     )
     return NextResponse.json(result.rows)
   } catch (error) {
-    console.error('Failed to fetch careers:', error)
+    log.error('Failed to fetch careers', error)
     return NextResponse.json(
       { error: 'Failed to fetch careers' },
       { status: 500 },
@@ -138,7 +139,7 @@ export const POST = requireAdmin(async (req: NextRequest) => {
       )
     }
 
-    console.error('Error creating career:', error)
+    log.error('Error creating career', error)
     return NextResponse.json(
       { error: 'Failed to create career' },
       { status: 400 },

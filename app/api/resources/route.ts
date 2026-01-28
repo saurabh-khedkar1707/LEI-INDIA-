@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
+import { log } from '@/lib/logger'
 
 // GET /api/resources - public
 export async function GET(_req: NextRequest) {
@@ -13,7 +14,7 @@ export async function GET(_req: NextRequest) {
     )
     return NextResponse.json(result.rows)
   } catch (error) {
-    console.error('Error fetching resources:', error)
+    log.error('Error fetching resources', error)
     return NextResponse.json(
       { error: 'Failed to fetch resources' },
       { status: 500 },

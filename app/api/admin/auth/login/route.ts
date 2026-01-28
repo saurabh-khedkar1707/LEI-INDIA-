@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import bcrypt from 'bcryptjs'
 import { generateToken } from '@/lib/jwt'
+import { log } from '@/lib/logger'
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('Login error:', error)
+    log.error('Admin login error', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       { error: `Failed to authenticate: ${message}` },
