@@ -1,31 +1,63 @@
 {
-  "name": "leiindias-monorepo",
+  "name": "leiindias",
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev:frontend": "pnpm --filter frontend dev",
-    "dev:backend": "pnpm --filter backend dev",
-    "build": "pnpm --filter frontend build && pnpm --filter backend build",
-    "build:prod": "NODE_ENV=production pnpm --filter frontend build && NODE_ENV=production pnpm --filter backend build",
-    "start:prod": "pm2 start ecosystem.config.js --env production",
-    "stop:prod": "pm2 stop ecosystem.config.js",
-    "reload:prod": "pm2 reload ecosystem.config.js --env production",
-    "restart:prod": "pm2 restart ecosystem.config.js --env production",
-    "logs:prod": "pm2 logs",
-    "deploy": "bash scripts/deploy.sh",
-    "lint": "pnpm --filter frontend lint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "start:prod": "NODE_ENV=production next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=prisma/schema.prisma",
+    "seed:admin": "node scripts/seed-admin.mjs"
   },
-  "workspaces": [
-    "frontend",
-    "backend",
-    "shared"
-  ],
+  "workspaces": [],
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@prisma/client": "^6.0.0",
+    "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^0.460.0",
+    "next": "14.2.35",
+    "pg": "^8.13.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.53.0",
+    "tailwind-merge": "^2.5.0",
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.0"
+  },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "14.2.35",
+    "glob": "^13.0.0",
+    "postcss": "^8.4.49",
+    "prisma": "^6.0.0",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@9.0.0",
   "resolutions": {
     "glob": "^13.0.0"
   }
 }
-
