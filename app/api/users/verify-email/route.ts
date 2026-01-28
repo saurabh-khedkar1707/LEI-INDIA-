@@ -5,6 +5,7 @@ import { log } from '@/lib/logger'
 import { sendEmail, generateVerificationEmail } from '@/lib/email'
 import { csrfProtection } from '@/lib/csrf'
 import { rateLimit } from '@/lib/rate-limit'
+import { reportApiError } from '@/lib/error-reporting'
 
 // GET /api/users/verify-email?token=... - verify email with token
 export async function GET(req: NextRequest) {
@@ -82,7 +83,10 @@ export async function GET(req: NextRequest) {
       verified: true,
     })
   } catch (error) {
-    log.error('Email verification error', error)
+    reportApiError(error, {
+      route: 'GET /api/users/verify-email',
+      message: 'Email verification error',
+    })
     return NextResponse.json(
       { error: 'Failed to verify email' },
       { status: 500 },
@@ -192,7 +196,13 @@ export async function POST(req: NextRequest) {
       message: 'If an account exists with this email, a verification link has been sent.',
     })
   } catch (error) {
-    log.error('Resend verification email error', error)
+    reportApiError(error, {
+      route: 'POST /api/users/verify-email/resend',
+      message: 'Resend verification email error',
+      extras: {
+        // Do not include raw email to avoid PII leak; we already logged earlier if needed
+      },
+    })
     return NextResponse.json(
       { error: 'Failed to resend verification email' },
       { status: 500 },

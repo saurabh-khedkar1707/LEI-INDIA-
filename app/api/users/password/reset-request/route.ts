@@ -6,6 +6,7 @@ import { log } from '@/lib/logger'
 import { sendEmail, generatePasswordResetEmail } from '@/lib/email'
 import { csrfProtection } from '@/lib/csrf'
 import { rateLimit } from '@/lib/rate-limit'
+import { reportApiError } from '@/lib/error-reporting'
 
 const resetRequestSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
@@ -117,7 +118,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    log.error('Password reset request error', error)
+    reportApiError(error, {
+      route: 'POST /api/users/password/reset-request',
+      message: 'Password reset request error',
+    })
+
     return NextResponse.json(
       { error: 'Failed to process password reset request' },
       { status: 500 },

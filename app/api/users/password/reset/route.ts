@@ -5,6 +5,7 @@ import { pgPool } from '@/lib/pg'
 import { log } from '@/lib/logger'
 import { csrfProtection } from '@/lib/csrf'
 import { rateLimit } from '@/lib/rate-limit'
+import { reportApiError } from '@/lib/error-reporting'
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
@@ -101,7 +102,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    log.error('Password reset error', error)
+    reportApiError(error, {
+      route: 'POST /api/users/password/reset',
+      message: 'Password reset error',
+    })
+
     return NextResponse.json(
       { error: 'Failed to reset password' },
       { status: 500 },

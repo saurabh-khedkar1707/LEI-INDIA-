@@ -8,6 +8,7 @@ import { log } from '@/lib/logger'
 import { sendEmail, generateVerificationEmail } from '@/lib/email'
 import { csrfProtection } from '@/lib/csrf'
 import { rateLimit } from '@/lib/rate-limit'
+import { reportApiError } from '@/lib/error-reporting'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').trim(),
@@ -143,7 +144,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    log.error('Registration error', error)
+    reportApiError(error, {
+      route: 'POST /api/users/register',
+      message: 'Registration error',
+    })
+
     return NextResponse.json(
       { error: 'Failed to register user' },
       { status: 500 },

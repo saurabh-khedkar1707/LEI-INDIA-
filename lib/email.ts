@@ -14,66 +14,78 @@ interface EmailOptions {
 }
 
 /**
- * Send an email using the configured email service
- * Supports Resend, SendGrid, or SMTP based on environment configuration
+ * Send an email using the configured email service.
+ *
+ * Supports Resend, SendGrid, or SMTP based on environment configuration.
+ * In development, failures are logged but do not break the user flow.
+ * In production, misconfiguration or provider failures will surface
+ * as errors so they can be detected and fixed quickly.
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const { to, subject, html, text } = options
 
-  // Determine which email provider to use based on environment variables
-  const emailProvider = process.env.EMAIL_PROVIDER || 'resend' // Default to Resend
-  
+  // Default to "disabled" unless a real provider is explicitly configured.
+  // This avoids accidentally thinking emails are being sent when they are not.
+  const emailProvider = (process.env.EMAIL_PROVIDER || 'disabled').toLowerCase()
+
   try {
-    switch (emailProvider.toLowerCase()) {
+    switch (emailProvider) {
       case 'resend':
         await sendViaResend(options)
         log.info('📧 Email sent via Resend', { to, subject })
         return
-      
+
       case 'sendgrid':
         await sendViaSendGrid(options)
         log.info('📧 Email sent via SendGrid', { to, subject })
         return
-      
+
       case 'smtp':
       case 'nodemailer':
         await sendViaNodemailer(options)
         log.info('📧 Email sent via SMTP', { to, subject })
         return
-      
+
       case 'ses':
       case 'aws':
         await sendViaSES(options)
         log.info('📧 Email sent via AWS SES', { to, subject })
         return
-      
+
       case 'disabled':
       case 'log':
         // Fallback to logging only (for development/testing)
-        log.info('📧 EMAIL (Logging Only - Email Service Disabled)', { 
-          to, 
-          subject, 
-          body: text || html.substring(0, 200) + '...'
+        log.info('📧 EMAIL (Logging Only - Email Service Disabled)', {
+          to,
+          subject,
+          body: text || html.substring(0, 200) + '...',
         })
         return
-      
+
       default:
-        throw new Error(`Unknown email provider: ${emailProvider}. Set EMAIL_PROVIDER to 'resend', 'sendgrid', 'smtp', 'ses', or 'disabled'`)
+        throw new Error(
+          `Unknown email provider: ${emailProvider}. Set EMAIL_PROVIDER to 'resend', 'sendgrid', 'smtp', 'ses', or 'disabled'`,
+        )
     }
   } catch (error: any) {
-    log.error('Failed to send email', { 
-      to, 
-      subject, 
+    log.error('Failed to send email', error, {
+      to,
+      subject,
       provider: emailProvider,
-      error: error.message 
     })
-    // In production, we should throw the error
-    // In development, we can log and continue
+
+    // In production, surface the error so the calling API can report it to Sentry
     if (process.env.NODE_ENV === 'production') {
       throw error
     }
+
     // In development, log but don't break the flow
-    log.warn('Email sending failed in development mode, continuing anyway', error)
+    log.warn('Email sending failed in development mode, continuing anyway', {
+      to,
+      subject,
+      provider: emailProvider,
+      error: error?.message,
+    })
   }
 }
 
