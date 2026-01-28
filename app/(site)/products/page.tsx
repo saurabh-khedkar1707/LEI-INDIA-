@@ -7,6 +7,7 @@ import { ComparisonDrawer } from "@/components/features/ComparisonDrawer"
 import { ProductPagination } from "@/components/features/ProductPagination"
 import { Product } from "@/types"
 import { categories } from "@/lib/data"
+import { log } from "@/lib/logger"
 
 // Helper function to convert category slug to category name for database query
 function getCategoryNameFromSlug(slug: string | undefined): string | undefined {
@@ -71,7 +72,7 @@ async function getProducts(searchParams: { [key: string]: string | string[] | un
     }
     return await response.json()
   } catch (error) {
-    console.error('Error fetching products:', error)
+    log.error('Error fetching products', error)
     return {
       products: [],
       pagination: {

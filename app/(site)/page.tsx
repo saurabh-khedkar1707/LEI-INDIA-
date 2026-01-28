@@ -11,6 +11,7 @@ import { Product } from "@/types"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, HeadphonesIcon, Package, Globe } from "lucide-react"
+import { log } from "@/lib/logger"
 
 export const metadata: Metadata = {
   title: "Home",
@@ -37,7 +38,9 @@ async function getProducts(): Promise<Product[]> {
     const data = await response.json()
     return Array.isArray(data) ? data : (data.products || [])
   } catch (error) {
-    console.warn('Failed to fetch products for homepage:', error instanceof Error ? error.message : String(error))
+    log.warn('Failed to fetch products for homepage', {
+      error: error instanceof Error ? error.message : String(error),
+    })
     // Return empty array to prevent build failures
     return []
   }
