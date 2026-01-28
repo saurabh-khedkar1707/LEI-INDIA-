@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,85 +6,173 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
 jobs:
-  lint-and-test:
+  lint:
+    name: Lint Code
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-      JWT_SECRET: test-secret-key-for-ci
-      JWT_EXPIRES_IN: 1h
-      NODE_ENV: test
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v2
         with:
-          version: 9.0.0
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup database
-        run: pnpm db:setup
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-
-      - name: Run linter
+      - name: Run ESLint
         run: pnpm lint
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run unit tests
         run: pnpm test:unit
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          JWT_SECRET: test-secret-key-for-ci
-
-      - name: Build application
-        run: pnpm build
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          JWT_SECRET: test-secret-key-for-ci
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
 
       - name: Run E2E tests
         run: pnpm test:e2e
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          JWT_SECRET: test-secret-key-for-ci
-          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
 
-      - name: Upload test results
-        if: always()
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js application
+        run: pnpm build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+          NEXT_PUBLIC_APP_URL: https://example.com
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: |
-            test-results/
-            playwright-report/
-          retention-days: 30
+          name: build-artifacts
+          path: .next
+          retention-days: 7
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: pnpm audit --audit-level=moderate || true
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://your-production-url.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for production
+        run: pnpm build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
+
+      - name: Deploy to production
+        run: |
+          echo "Deploy to your hosting platform here"
+          echo "Examples:"
+          echo "  - Vercel: Use vercel CLI or GitHub integration"
+          echo "  - AWS: Use AWS CLI or CDK"
+          echo "  - Docker: Build and push Docker image"
+          echo "  - Custom: Use your deployment script"

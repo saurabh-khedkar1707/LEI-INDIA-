@@ -5,6 +5,7 @@ import { pgPool } from '@/lib/pg'
 import { generateToken } from '@/lib/jwt'
 import { rateLimit } from '@/lib/rate-limit'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
@@ -12,6 +13,12 @@ const loginSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
   // Rate limiting - stricter for login endpoint to prevent brute force
   const rateLimitResponse = await rateLimit(req, { maxRequests: 5, windowSeconds: 60 })
   if (rateLimitResponse) {

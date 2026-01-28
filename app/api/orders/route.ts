@@ -4,6 +4,8 @@ import { pgPool } from '@/lib/pg'
 import { verifyToken } from '@/lib/jwt'
 import { requireAdmin, requireCustomer } from '@/lib/auth-middleware'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const orderItemSchema = z.object({
   productId: z.string().min(1, 'Product ID is required'),
@@ -33,6 +35,18 @@ const orderUpdateSchema = z.object({
 
 // POST /api/orders - create order (RFQ, authenticated customer)
 export const POST = requireCustomer(async (req: NextRequest) => {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent order spam
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 10, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
 
     const json = await req.json()

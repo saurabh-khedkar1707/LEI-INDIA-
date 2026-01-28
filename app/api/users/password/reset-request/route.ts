@@ -3,12 +3,27 @@ import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import crypto from 'crypto'
 import { log } from '@/lib/logger'
+import { sendEmail, generatePasswordResetEmail } from '@/lib/email'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const resetRequestSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
 })
 
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent brute force password reset requests
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 5, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const json = await req.json()
     const data = resetRequestSchema.parse(json)
@@ -61,18 +76,32 @@ export async function POST(req: NextRequest) {
       [user.id, resetToken, expiresAt],
     )
 
-    // Email service disabled - reset token is generated but email is not sent
-    // Admin can provide the reset link to users manually
+    // Send password reset email
     const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
-    log.info('Password reset token generated', { 
-      email: data.email,
-      resetLink,
-      expiresAt: expiresAt.toISOString()
-    })
+    const emailContent = generatePasswordResetEmail(resetLink, user.name)
+    
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+      })
+      log.info('Password reset email sent', { 
+        userId: user.id,
+        email: user.email 
+      })
+    } catch (error: any) {
+      log.error('Failed to send password reset email', { 
+        userId: user.id,
+        email: user.email,
+        error: error.message 
+      })
+      // Still return success to prevent email enumeration
+    }
 
     return NextResponse.json({
       message: 'If an account exists with this email, a password reset link has been sent.',
-      // Note: Email service is disabled - reset link is logged for admin reference
     })
   } catch (error: any) {
     if (error?.name === 'ZodError') {

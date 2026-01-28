@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
 
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
   try {
     const response = NextResponse.json({ message: 'Logged out successfully' })
 

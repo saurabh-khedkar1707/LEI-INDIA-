@@ -3,6 +3,8 @@ import { pgPool } from '@/lib/pg'
 import { categorySchema } from '@/lib/category-validation'
 import { requireAdmin } from '@/lib/auth-middleware'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/categories - public list of categories
 export async function GET(req: NextRequest) {
@@ -71,6 +73,18 @@ export async function GET(req: NextRequest) {
 
 // POST /api/categories - create category (admin only)
 export const POST = requireAdmin(async (req: NextRequest) => {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 20, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const body = await req.json()
     const parsed = categorySchema.parse(body)

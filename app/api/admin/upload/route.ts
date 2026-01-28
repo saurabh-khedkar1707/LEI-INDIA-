@@ -4,12 +4,26 @@ import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { checkAdmin } from '@/lib/auth-middleware'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const uploadsDir = join(process.cwd(), 'public', 'uploads')
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB in bytes
 
 // POST /api/admin/upload - upload product image (admin)
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent file upload DoS
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 10, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const auth = checkAdmin(req)
     if (auth instanceof NextResponse) return auth

@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { requireAdmin } from '@/lib/auth-middleware'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const inquirySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').trim(),
@@ -23,6 +25,18 @@ const inquiryUpdateSchema = z.object({
 
 // POST /api/inquiries - submit inquiry (public)
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent spam contact form submissions
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 10, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const json = await req.json()
     const data = inquirySchema.parse(json)

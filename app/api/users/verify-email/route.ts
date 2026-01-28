@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { pgPool } from '@/lib/pg'
 import crypto from 'crypto'
 import { log } from '@/lib/logger'
+import { sendEmail, generateVerificationEmail } from '@/lib/email'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 // GET /api/users/verify-email?token=... - verify email with token
 export async function GET(req: NextRequest) {
@@ -89,6 +92,18 @@ export async function GET(req: NextRequest) {
 
 // POST /api/users/verify-email/resend - resend verification email
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent spam resend requests
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 5, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const json = await req.json()
     const { email } = json
@@ -149,18 +164,32 @@ export async function POST(req: NextRequest) {
       [verificationToken, expiresAt, user.id],
     )
 
-    // Email service disabled - verification token is generated but email is not sent
-    // Admin can provide the verification link to users manually
+    // Send verification email
     const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-    log.info('Verification email resend - token generated', { 
-      email: email.toLowerCase().trim(),
-      verificationLink,
-      expiresAt: expiresAt.toISOString()
-    })
+    const emailContent = generateVerificationEmail(verificationLink, user.name)
+    
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+      })
+      log.info('Verification email resent', { 
+        userId: user.id,
+        email: user.email 
+      })
+    } catch (error: any) {
+      log.error('Failed to resend verification email', { 
+        userId: user.id,
+        email: user.email,
+        error: error.message 
+      })
+      // Still return success to prevent email enumeration
+    }
 
     return NextResponse.json({
       message: 'If an account exists with this email, a verification link has been sent.',
-      // Note: Email service is disabled - verification link is logged for admin reference
     })
   } catch (error) {
     log.error('Resend verification email error', error)

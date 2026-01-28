@@ -5,6 +5,9 @@ import crypto from 'crypto'
 import { pgPool } from '@/lib/pg'
 import { generateToken } from '@/lib/jwt'
 import { log } from '@/lib/logger'
+import { sendEmail, generateVerificationEmail } from '@/lib/email'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').trim(),
@@ -15,6 +18,18 @@ const registerSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting - prevent brute force registration
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 5, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const json = await req.json()
     const data = registerSchema.parse(json)
@@ -63,14 +78,29 @@ export async function POST(req: NextRequest) {
 
     const user = inserted.rows[0]
 
-    // Email service disabled - verification token is generated but email is not sent
-    // Users can verify via the verify-email page with the token
+    // Send verification email
     const verificationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`
-    log.info('User registered - verification token generated', { 
-      userId: user.id, 
-      email: user.email,
-      verificationLink 
-    })
+    const emailContent = generateVerificationEmail(verificationLink, user.name)
+    
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+      })
+      log.info('Verification email sent', { 
+        userId: user.id, 
+        email: user.email 
+      })
+    } catch (error: any) {
+      // Log error but don't fail registration - user can request resend later
+      log.error('Failed to send verification email', { 
+        userId: user.id, 
+        email: user.email,
+        error: error.message 
+      })
+    }
 
     const token = generateToken(user.email, 'customer')
 

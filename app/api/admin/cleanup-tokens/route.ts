@@ -2,9 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkAdmin } from '@/lib/auth-middleware'
 import { pgPool } from '@/lib/pg'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 // POST /api/admin/cleanup-tokens - Clean up expired tokens (admin only)
 export async function POST(req: NextRequest) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 5, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const auth = checkAdmin(req)
     if (auth instanceof NextResponse) return auth

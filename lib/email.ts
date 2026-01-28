@@ -15,30 +15,81 @@ interface EmailOptions {
 
 /**
  * Send an email using the configured email service
- * Currently disabled - emails are only logged, not sent
+ * Supports Resend, SendGrid, or SMTP based on environment configuration
  */
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const { to, subject, html, text } = options
 
-  // Email service is disabled - just log the email details
-  log.info('📧 EMAIL (Logging Only - Email Service Disabled)', { 
-    to, 
-    subject, 
-    body: text || html.substring(0, 200) + '...' // Truncate long HTML
-  })
+  // Determine which email provider to use based on environment variables
+  const emailProvider = process.env.EMAIL_PROVIDER || 'resend' // Default to Resend
   
-  // Email service is disabled - no actual sending
-  return
+  try {
+    switch (emailProvider.toLowerCase()) {
+      case 'resend':
+        await sendViaResend(options)
+        log.info('📧 Email sent via Resend', { to, subject })
+        return
+      
+      case 'sendgrid':
+        await sendViaSendGrid(options)
+        log.info('📧 Email sent via SendGrid', { to, subject })
+        return
+      
+      case 'smtp':
+      case 'nodemailer':
+        await sendViaNodemailer(options)
+        log.info('📧 Email sent via SMTP', { to, subject })
+        return
+      
+      case 'ses':
+      case 'aws':
+        await sendViaSES(options)
+        log.info('📧 Email sent via AWS SES', { to, subject })
+        return
+      
+      case 'disabled':
+      case 'log':
+        // Fallback to logging only (for development/testing)
+        log.info('📧 EMAIL (Logging Only - Email Service Disabled)', { 
+          to, 
+          subject, 
+          body: text || html.substring(0, 200) + '...'
+        })
+        return
+      
+      default:
+        throw new Error(`Unknown email provider: ${emailProvider}. Set EMAIL_PROVIDER to 'resend', 'sendgrid', 'smtp', 'ses', or 'disabled'`)
+    }
+  } catch (error: any) {
+    log.error('Failed to send email', { 
+      to, 
+      subject, 
+      provider: emailProvider,
+      error: error.message 
+    })
+    // In production, we should throw the error
+    // In development, we can log and continue
+    if (process.env.NODE_ENV === 'production') {
+      throw error
+    }
+    // In development, log but don't break the flow
+    log.warn('Email sending failed in development mode, continuing anyway', error)
+  }
 }
 
 /**
  * Send email via Resend (https://resend.com)
- * Requires: EMAIL_API_KEY (Resend API key)
+ * Requires: EMAIL_API_KEY (Resend API key), EMAIL_FROM (sender email)
  */
 async function sendViaResend(options: EmailOptions): Promise<void> {
   const apiKey = process.env.EMAIL_API_KEY
   if (!apiKey) {
-    throw new Error('EMAIL_API_KEY is required for Resend')
+    throw new Error('EMAIL_API_KEY is required for Resend. Get your API key from https://resend.com/api-keys')
+  }
+
+  const fromEmail = process.env.EMAIL_FROM
+  if (!fromEmail) {
+    throw new Error('EMAIL_FROM is required. Set it to your verified sender email (e.g., noreply@yourdomain.com)')
   }
 
   const response = await fetch('https://api.resend.com/emails', {
@@ -48,7 +99,7 @@ async function sendViaResend(options: EmailOptions): Promise<void> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.EMAIL_FROM || 'noreply@example.com',
+      from: fromEmail,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -57,19 +108,31 @@ async function sendViaResend(options: EmailOptions): Promise<void> {
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`Resend API error: ${error}`)
+    const errorText = await response.text()
+    let errorMessage = `Resend API error (${response.status})`
+    try {
+      const errorJson = JSON.parse(errorText)
+      errorMessage = errorJson.message || errorMessage
+    } catch {
+      errorMessage = errorText || errorMessage
+    }
+    throw new Error(errorMessage)
   }
 }
 
 /**
  * Send email via SendGrid
- * Requires: EMAIL_API_KEY (SendGrid API key)
+ * Requires: EMAIL_API_KEY (SendGrid API key), EMAIL_FROM (sender email)
  */
 async function sendViaSendGrid(options: EmailOptions): Promise<void> {
   const apiKey = process.env.EMAIL_API_KEY
   if (!apiKey) {
-    throw new Error('EMAIL_API_KEY is required for SendGrid')
+    throw new Error('EMAIL_API_KEY is required for SendGrid. Get your API key from https://app.sendgrid.com/settings/api_keys')
+  }
+
+  const fromEmail = process.env.EMAIL_FROM
+  if (!fromEmail) {
+    throw new Error('EMAIL_FROM is required. Set it to your verified sender email (e.g., noreply@yourdomain.com)')
   }
 
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -80,7 +143,7 @@ async function sendViaSendGrid(options: EmailOptions): Promise<void> {
     },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: options.to }] }],
-      from: { email: process.env.EMAIL_FROM || 'noreply@example.com' },
+      from: { email: fromEmail },
       subject: options.subject,
       content: [
         { type: 'text/html', value: options.html },
@@ -90,8 +153,15 @@ async function sendViaSendGrid(options: EmailOptions): Promise<void> {
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(`SendGrid API error: ${error}`)
+    const errorText = await response.text()
+    let errorMessage = `SendGrid API error (${response.status})`
+    try {
+      const errorJson = JSON.parse(errorText)
+      errorMessage = errorJson.errors?.[0]?.message || errorMessage
+    } catch {
+      errorMessage = errorText || errorMessage
+    }
+    throw new Error(errorMessage)
   }
 }
 

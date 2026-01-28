@@ -1,6 +1,8 @@
 import { Pool, PoolClient } from 'pg'
 import { DATABASE_URL, NODE_ENV } from './env-validation'
 import { log } from './logger'
+import fs from 'fs'
+import path from 'path'
 
 // Retry configuration
 const MAX_RETRIES = 5
@@ -101,16 +103,64 @@ async function testConnection(): Promise<boolean> {
   }
 }
 
+/**
+ * Get SSL configuration for database connection
+ * In production, SSL validation is required for security
+ */
+function getSslConfig(): { rejectUnauthorized: boolean; ca?: string } | undefined {
+  // In development/test, SSL is optional
+  if (NODE_ENV !== 'production') {
+    // Allow SSL to be disabled in development if DATABASE_URL doesn't require it
+    const url = new URL(DATABASE_URL)
+    if (url.searchParams.get('sslmode') === 'disable') {
+      return undefined
+    }
+    // In development, allow self-signed certificates
+    return { rejectUnauthorized: false }
+  }
+
+  // In production, SSL validation is REQUIRED
+  const sslCaPath = process.env.DATABASE_SSL_CA
+  const sslCaContent = process.env.DATABASE_SSL_CA_CONTENT
+
+  if (sslCaPath) {
+    // Load CA certificate from file path
+    try {
+      const caCert = fs.readFileSync(sslCaPath, 'utf8')
+      log.info('Using SSL CA certificate from file', { path: sslCaPath })
+      return {
+        rejectUnauthorized: true,
+        ca: caCert,
+      }
+    } catch (error) {
+      log.error('Failed to read SSL CA certificate file', { path: sslCaPath, error })
+      throw new Error(`Failed to read SSL CA certificate from ${sslCaPath}: ${error}`)
+    }
+  } else if (sslCaContent) {
+    // Use CA certificate from environment variable (base64 encoded or plain text)
+    log.info('Using SSL CA certificate from environment variable')
+    return {
+      rejectUnauthorized: true,
+      ca: sslCaContent,
+    }
+  } else {
+    // For managed Postgres services (AWS RDS, Heroku, etc.), they often provide
+    // certificates that Node.js can verify automatically. We still require SSL.
+    // If the service uses a custom CA, set DATABASE_SSL_CA or DATABASE_SSL_CA_CONTENT
+    log.warn(
+      'Production SSL: No custom CA certificate provided. ' +
+      'Using system CA certificates. If connection fails, set DATABASE_SSL_CA or DATABASE_SSL_CA_CONTENT.'
+    )
+    return {
+      rejectUnauthorized: true,
+    }
+  }
+}
+
 // Shared Postgres connection pool for the entire app
 export const pgPool = new Pool({
   connectionString: DATABASE_URL,
-  // SSL Configuration:
-  // - For managed Postgres (AWS RDS, Heroku, etc.): Use proper CA certificates
-  // - For self-hosted with valid certificates: Set rejectUnauthorized: true with ca option
-  // - Current setting (rejectUnauthorized: false) is for development/testing only
-  // TODO: In production, use proper SSL certificates:
-  //   ssl: { rejectUnauthorized: true, ca: fs.readFileSync('/path/to/ca-cert.pem') }
-  ssl: NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
+  ssl: getSslConfig(),
   max: 20, // Maximum number of clients in the pool
   min: 2, // Minimum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds

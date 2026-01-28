@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { pgPool } from '@/lib/pg'
 import { checkAdmin } from '@/lib/auth-middleware'
 import { log } from '@/lib/logger'
+import { csrfProtection } from '@/lib/csrf'
+import { rateLimit } from '@/lib/rate-limit'
 
 const orderUpdateSchema = z.object({
   status: z.enum(['pending', 'quoted', 'approved', 'rejected']).optional(),
@@ -71,6 +73,18 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
+  // CSRF protection
+  const csrfResponse = csrfProtection(req)
+  if (csrfResponse) {
+    return csrfResponse
+  }
+
+  // Rate limiting
+  const rateLimitResponse = await rateLimit(req, { maxRequests: 20, windowSeconds: 60 })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     const auth = checkAdmin(req)
     if (auth instanceof NextResponse) return auth
