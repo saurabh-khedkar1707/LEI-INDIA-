@@ -34,7 +34,6 @@ export async function GET(
         "createdAt", "updatedAt"
       FROM "Product"
       WHERE id = $1
-      LIMIT 1
       `,
       [params.id],
     )
@@ -89,7 +88,6 @@ export async function PUT(
         "inStock", "stockQuantity", images, documents, "datasheetUrl"
       FROM "Product"
       WHERE id = $1
-      LIMIT 1
       `,
       [params.id],
     )
@@ -225,7 +223,6 @@ export async function DELETE(
       SELECT id
       FROM "Product"
       WHERE id = $1
-      LIMIT 1
       `,
       [params.id],
     )

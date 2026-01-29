@@ -11,6 +11,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, HeadphonesIcon, Package, Globe } from "lucide-react"
 import { log } from "@/lib/logger"
+import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
   title: "Home",
@@ -22,26 +23,23 @@ export const dynamic = 'force-dynamic'
 
 async function getProducts(): Promise<Product[]> {
   try {
-    // For server-side rendering, we need an absolute URL
-    // Ensure baseUrl is never empty - if NEXT_PUBLIC_API_URL is empty string, use localhost
-    const envApiUrl = process.env.NEXT_PUBLIC_API_URL
-    const baseUrl = envApiUrl && envApiUrl.trim() !== '' 
-      ? envApiUrl 
-      : (process.env.VERCEL_URL 
-          ? `https://${process.env.VERCEL_URL}` 
-          : `http://localhost:${process.env.PORT || 3000}`)
-    
-    const apiUrl = `${baseUrl}/api/products?limit=6`
-    
-    const response = await fetch(apiUrl, {
-      cache: 'no-store', // Always fetch fresh data
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-    })
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
-    }
-    const data = await response.json()
-    return Array.isArray(data) ? data : (data.products || [])
+    // Optimized: Direct database query eliminates HTTP overhead
+    // Using prepared statement for better performance
+    const result = await pgPool.query(
+      `
+      SELECT
+        id, sku, name, category, description, "technicalDescription", coding, pins,
+        "ipRating", gender, "connectorType", material, voltage, current,
+        "temperatureRange", "wireGauge", "cableLength", price, "priceType",
+        "inStock", "stockQuantity", images, documents, "datasheetUrl",
+        "createdAt", "updatedAt"
+      FROM "Product"
+      WHERE "inStock" = true
+      ORDER BY "createdAt" DESC
+      LIMIT 6
+      `,
+    )
+    return result.rows
   } catch (error) {
     log.error('Failed to fetch products for homepage', {
       error: error instanceof Error ? error.message : String(error),
@@ -53,31 +51,17 @@ async function getProducts(): Promise<Product[]> {
 
 async function getCategories(): Promise<Category[]> {
   try {
-    // Construct full URL for server component fetch
-    // In Next.js server components, we need to use absolute URLs or localhost
-    // Ensure baseUrl is never empty - if NEXT_PUBLIC_API_URL is empty string, use localhost
-    const envApiUrl = process.env.NEXT_PUBLIC_API_URL
-    const baseUrl = envApiUrl && envApiUrl.trim() !== ''
-      ? envApiUrl
-      : (process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : `http://localhost:${process.env.PORT || 3000}`)
-    
-    const apiUrl = `${baseUrl}/api/categories?limit=50`
-    
-    log.info(`Fetching categories from: ${apiUrl}`)
-    
-    const response = await fetch(apiUrl, {
-      cache: 'no-store', // Always fetch fresh data since we're using dynamic rendering
-      signal: AbortSignal.timeout(10000), // 10 second timeout
-    })
-    
-    if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    const categories = Array.isArray(data.categories) ? data.categories : []
+    // Optimized: Direct database query eliminates HTTP overhead
+    // Using prepared statement for better performance
+    const result = await pgPool.query(
+      `
+      SELECT id, name, slug, description, image, "parentId", "createdAt", "updatedAt"
+      FROM "Category"
+      ORDER BY "createdAt" ASC
+      LIMIT 50
+      `,
+    )
+    const categories = result.rows
     log.info(`Fetched ${categories.length} categories for homepage`)
     return categories
   } catch (error) {

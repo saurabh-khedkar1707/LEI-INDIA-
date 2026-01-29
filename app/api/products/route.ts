@@ -97,12 +97,14 @@ export async function GET(req: NextRequest) {
     }
 
     if (search) {
-      const value = `%${search.toLowerCase()}%`
-      const baseIndex = values.length + 1
+      // Use trigram similarity for faster text search (requires pg_trgm extension)
+      // This uses GIN indexes instead of full table scans
+      const searchIndex = values.length + 1
       filters.push(
-        `(LOWER(name) LIKE $${baseIndex} OR LOWER(sku) LIKE $${baseIndex + 1} OR LOWER(description) LIKE $${baseIndex + 2})`,
+        `(name % $${searchIndex} OR sku % $${searchIndex + 1} OR description % $${searchIndex + 2} OR name ILIKE $${searchIndex + 3} OR sku ILIKE $${searchIndex + 4})`,
       )
-      values.push(value, value, value)
+      const searchTerm = search.trim()
+      values.push(searchTerm, searchTerm, searchTerm, `%${searchTerm}%`, `%${searchTerm}%`)
     }
 
     if (category) {
@@ -113,27 +115,23 @@ export async function GET(req: NextRequest) {
 
     const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : ''
 
-    const countResult = await pgPool.query(
-      `
-      SELECT COUNT(*)::int AS total
-      FROM "Product"
-      ${whereClause}
-      `,
-      values,
-    )
-    const total: number = countResult.rows[0]?.total ?? 0
-
+    // Optimized: Use window function to get count and data in single query
+    // This eliminates one round-trip and reduces latency
     const dataValues = [...values, limit, offset]
     const productsResult = await pgPool.query(
       `
-      SELECT
-        id, sku, name, category, description, "technicalDescription", coding, pins,
-        "ipRating", gender, "connectorType", material, voltage, current,
-        "temperatureRange", "wireGauge", "cableLength", price, "priceType",
-        "inStock", "stockQuantity", images, documents, "datasheetUrl",
-        "createdAt", "updatedAt"
-      FROM "Product"
-      ${whereClause}
+      WITH filtered_products AS (
+        SELECT
+          id, sku, name, category, description, "technicalDescription", coding, pins,
+          "ipRating", gender, "connectorType", material, voltage, current,
+          "temperatureRange", "wireGauge", "cableLength", price, "priceType",
+          "inStock", "stockQuantity", images, documents, "datasheetUrl",
+          "createdAt", "updatedAt",
+          COUNT(*) OVER() AS total
+        FROM "Product"
+        ${whereClause}
+      )
+      SELECT * FROM filtered_products
       ORDER BY "createdAt" DESC
       LIMIT $${dataValues.length - 1}
       OFFSET $${dataValues.length}
@@ -141,6 +139,7 @@ export async function GET(req: NextRequest) {
       dataValues,
     )
     const products = productsResult.rows
+    const total: number = products.length > 0 ? parseInt(products[0].total) : 0
 
     return NextResponse.json({
       products,

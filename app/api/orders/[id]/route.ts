@@ -46,22 +46,24 @@ export async function GET(
         o.status,
         o."createdAt",
         o."updatedAt",
-        json_agg(
-          json_build_object(
-            'id', oi.id,
-            'orderId', oi."orderId",
-            'productId', oi."productId",
-            'sku', oi.sku,
-            'name', oi.name,
-            'quantity', oi.quantity,
-            'notes', oi.notes
-          )
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', oi.id,
+              'orderId', oi."orderId",
+              'productId', oi."productId",
+              'sku', oi.sku,
+              'name', oi.name,
+              'quantity', oi.quantity,
+              'notes', oi.notes
+            )
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'::json
         ) AS items
       FROM "Order" o
       LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
       WHERE o.id = $1
       GROUP BY o.id
-      LIMIT 1
       `,
       [params.id],
     )
@@ -108,25 +110,48 @@ export async function PUT(
     const json = await req.json()
     const data = orderUpdateSchema.parse(json)
 
+    // Optimized: Single query combining UPDATE and items fetch
     const result = await pgPool.query(
       `
-      UPDATE "Order"
-      SET
-        status = COALESCE($1, status),
-        notes = COALESCE($2, notes),
-        "updatedAt" = NOW()
-      WHERE id = $3
-      RETURNING
-        id,
-        "companyName",
-        "contactName",
-        email,
-        phone,
-        "companyAddress",
-        notes,
-        status,
-        "createdAt",
-        "updatedAt"
+      WITH updated_order AS (
+        UPDATE "Order"
+        SET
+          status = COALESCE($1, status),
+          notes = COALESCE($2, notes),
+          "updatedAt" = NOW()
+        WHERE id = $3
+        RETURNING
+          id,
+          "companyName",
+          "contactName",
+          email,
+          phone,
+          "companyAddress",
+          notes,
+          status,
+          "createdAt",
+          "updatedAt"
+      )
+      SELECT
+        o.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', oi.id,
+              'orderId', oi."orderId",
+              'productId', oi."productId",
+              'sku', oi.sku,
+              'name', oi.name,
+              'quantity', oi.quantity,
+              'notes', oi.notes
+            )
+          ) FILTER (WHERE oi.id IS NOT NULL),
+          '[]'::json
+        ) AS items
+      FROM updated_order o
+      LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
+      GROUP BY o.id, o."companyName", o."contactName", o.email, o.phone,
+               o."companyAddress", o.notes, o.status, o."createdAt", o."updatedAt"
       `,
       [data.status ?? null, data.notes ?? null, params.id],
     )
@@ -136,19 +161,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    const itemsResult = await pgPool.query(
-      `
-      SELECT id, "orderId", "productId", sku, name, quantity, notes
-      FROM "OrderItem"
-      WHERE "orderId" = $1
-      `,
-      [params.id],
-    )
-
-    return NextResponse.json({
-      ...order,
-      items: itemsResult.rows,
-    })
+    return NextResponse.json(order)
   } catch (error: any) {
     if (error?.name === 'ZodError') {
       return NextResponse.json(

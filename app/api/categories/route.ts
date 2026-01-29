@@ -19,33 +19,28 @@ export async function GET(req: NextRequest) {
     const values: any[] = []
     let whereClause = ''
     if (search) {
-      values.push(`%${search}%`)
-      values.push(`%${search}%`)
-      values.push(`%${search}%`)
+      const searchTerm = search.trim()
+      const searchIndex = values.length + 1
+      // Use trigram similarity for faster text search
       whereClause = `
         WHERE
-          name ILIKE $1
-          OR slug ILIKE $2
-          OR description ILIKE $3
+          (name % $${searchIndex} OR slug % $${searchIndex + 1} OR name ILIKE $${searchIndex + 2} OR slug ILIKE $${searchIndex + 3})
       `
+      values.push(searchTerm, searchTerm, `%${searchTerm}%`, `%${searchTerm}%`)
     }
 
-    const countResult = await pgPool.query(
-      `
-      SELECT COUNT(*)::int AS total
-      FROM "Category"
-      ${whereClause}
-      `,
-      values,
-    )
-    const total: number = countResult.rows[0]?.total ?? 0
-
+    // Optimized: Single query with window function
     const dataValues = [...values, limit, skip]
     const categoriesResult = await pgPool.query(
       `
-      SELECT id, name, slug, description, image, "parentId", "createdAt", "updatedAt"
-      FROM "Category"
-      ${whereClause}
+      WITH filtered_categories AS (
+        SELECT 
+          id, name, slug, description, image, "parentId", "createdAt", "updatedAt",
+          COUNT(*) OVER() AS total
+        FROM "Category"
+        ${whereClause}
+      )
+      SELECT * FROM filtered_categories
       ORDER BY "createdAt" ASC
       LIMIT $${dataValues.length - 1}
       OFFSET $${dataValues.length}
@@ -53,6 +48,7 @@ export async function GET(req: NextRequest) {
       dataValues,
     )
     const categories = categoriesResult.rows
+    const total: number = categories.length > 0 ? parseInt(categories[0].total) : 0
 
     return NextResponse.json({
       categories,

@@ -91,16 +91,17 @@ export const GET = requireAdmin(async (req: NextRequest) => {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
     const offset = (page - 1) * limit
 
-    const countResult = await pgPool.query(
-      `SELECT COUNT(*)::int AS total FROM "Inquiry"`,
-    )
-    const total: number = countResult.rows[0]?.total ?? 0
-
+    // Optimized: Single query with window function
     const result = await pgPool.query(
       `
-      SELECT id, name, email, phone, company, subject, message, read, responded,
-             "createdAt", "updatedAt"
-      FROM "Inquiry"
+      WITH filtered_inquiries AS (
+        SELECT 
+          id, name, email, phone, company, subject, message, read, responded,
+          "createdAt", "updatedAt",
+          COUNT(*) OVER() AS total
+        FROM "Inquiry"
+      )
+      SELECT * FROM filtered_inquiries
       ORDER BY "createdAt" DESC
       LIMIT $1
       OFFSET $2
@@ -108,8 +109,11 @@ export const GET = requireAdmin(async (req: NextRequest) => {
       [limit, offset],
     )
 
+    const inquiries = result.rows
+    const total: number = inquiries.length > 0 ? parseInt(inquiries[0].total) : 0
+
     return NextResponse.json({
-      inquiries: result.rows,
+      inquiries: inquiries.map(({ total, ...inquiry }) => inquiry), // Remove total from each row
       pagination: {
         page,
         limit,

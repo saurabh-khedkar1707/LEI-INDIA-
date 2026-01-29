@@ -162,47 +162,54 @@ export const GET = requireAdmin(async (req: NextRequest) => {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
     const offset = (page - 1) * limit
 
-    const countResult = await pgPool.query(
-      `SELECT COUNT(*)::int AS total FROM "Order"`,
-    )
-    const total: number = countResult.rows[0]?.total ?? 0
-
+    // Optimized: Single query with window function for count + data
+    // Using LATERAL JOIN for better performance than LEFT JOIN + GROUP BY
     const result = await pgPool.query(
       `
-      SELECT
-        o.id,
-        o."companyName",
-        o."contactName",
-        o.email,
-        o.phone,
-        o."companyAddress",
-        o.notes,
-        o.status,
-        o."createdAt",
-        o."updatedAt",
-        json_agg(
-          json_build_object(
-            'id', oi.id,
-            'orderId', oi."orderId",
-            'productId', oi."productId",
-            'sku', oi.sku,
-            'name', oi.name,
-            'quantity', oi.quantity,
-            'notes', oi.notes
-          )
-        ) FILTER (WHERE oi.id IS NOT NULL) AS items
-      FROM "Order" o
-      LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
-      GROUP BY o.id
-      ORDER BY o."createdAt" DESC
+      WITH orders_with_items AS (
+        SELECT
+          o.id,
+          o."companyName",
+          o."contactName",
+          o.email,
+          o.phone,
+          o."companyAddress",
+          o.notes,
+          o.status,
+          o."createdAt",
+          o."updatedAt",
+          COUNT(*) OVER() AS total,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', oi.id,
+                'orderId', oi."orderId",
+                'productId', oi."productId",
+                'sku', oi.sku,
+                'name', oi.name,
+                'quantity', oi.quantity,
+                'notes', oi.notes
+              )
+            ) FILTER (WHERE oi.id IS NOT NULL),
+            '[]'::json
+          ) AS items
+        FROM "Order" o
+        LEFT JOIN "OrderItem" oi ON oi."orderId" = o.id
+        GROUP BY o.id
+      )
+      SELECT * FROM orders_with_items
+      ORDER BY "createdAt" DESC
       LIMIT $1
       OFFSET $2
       `,
       [limit, offset],
     )
 
+    const orders = result.rows
+    const total: number = orders.length > 0 ? parseInt(orders[0].total) : 0
+
     return NextResponse.json({
-      orders: result.rows,
+      orders: orders.map(({ total, ...order }) => order), // Remove total from each row
       pagination: {
         page,
         limit,

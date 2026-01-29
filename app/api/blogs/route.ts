@@ -43,21 +43,19 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
     const offset = (page - 1) * limit
 
-    const countResult = await pgPool.query(
-      `
-      SELECT COUNT(*)::int AS total
-      FROM "Blog"
-      ${isAdmin ? '' : 'WHERE published = true'}
-      `,
-    )
-    const total: number = countResult.rows[0]?.total ?? 0
-
+    // Optimized: Single query with window function, using partial index for published blogs
+    const whereClause = isAdmin ? '' : 'WHERE published = true'
     const result = await pgPool.query(
       `
-      SELECT id, title, slug, excerpt, content, image, published,
-             "createdAt", "updatedAt"
-      FROM "Blog"
-      ${isAdmin ? '' : 'WHERE published = true'}
+      WITH filtered_blogs AS (
+        SELECT 
+          id, title, slug, excerpt, content, image, published,
+          "createdAt", "updatedAt",
+          COUNT(*) OVER() AS total
+        FROM "Blog"
+        ${whereClause}
+      )
+      SELECT * FROM filtered_blogs
       ORDER BY "createdAt" DESC
       LIMIT $1
       OFFSET $2
@@ -65,8 +63,11 @@ export async function GET(req: NextRequest) {
       [limit, offset],
     )
 
+    const blogs = result.rows
+    const total: number = blogs.length > 0 ? parseInt(blogs[0].total) : 0
+
     return NextResponse.json({
-      blogs: result.rows,
+      blogs: blogs.map(({ total, ...blog }) => blog), // Remove total from each row
       pagination: {
         page,
         limit,

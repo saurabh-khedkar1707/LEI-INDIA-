@@ -1,25 +1,23 @@
-# Lei Indias
+# LEI Indias - Industrial Connectors & Cables Platform
 
-A modern e-commerce platform built with Next.js 14, featuring product management, RFQ (Request for Quote) system, blog, careers, and comprehensive admin dashboard.
+A professional B2B e-commerce platform for industrial connectors, cables, and PROFINET products. Built with Next.js 14, TypeScript, PostgreSQL, and modern web technologies.
 
 ## 🚀 Features
 
-- **Product Management**: Browse, filter, and compare products with advanced search capabilities
-- **RFQ System**: Request for Quote functionality for bulk orders
-- **User Authentication**: Secure JWT-based authentication for customers and admins
-- **Admin Dashboard**: Comprehensive admin panel for managing products, categories, blogs, careers, and more
+- **Product Catalog**: Comprehensive product management with categories, filters, and search
+- **RFQ System**: Request for Quotation functionality for B2B customers
+- **User Management**: Customer registration, authentication, and profile management
+- **Admin Dashboard**: Full admin panel for managing products, categories, blogs, careers, and inquiries
 - **Blog & Resources**: Content management system for blogs and resources
-- **Career Management**: Job posting and application system
-- **Responsive Design**: Modern UI built with Tailwind CSS and Radix UI components
-- **Database**: PostgreSQL with Prisma schema
-- **Security**: CSRF protection, rate limiting, input sanitization
+- **Career Portal**: Job posting and application management
+- **Responsive Design**: Modern, mobile-first UI built with Tailwind CSS and Radix UI
 
 ## 📋 Prerequisites
 
-- **Node.js** 20.x or higher
-- **pnpm** 9.0.0 (package manager)
-- **PostgreSQL** 12+ database
-- **Git** for version control
+- **Node.js**: 20.x or higher
+- **pnpm**: 9.0.0 or higher (package manager)
+- **PostgreSQL**: 12.x or higher
+- **Git**: For version control
 
 ## 🛠️ Installation
 
@@ -38,85 +36,65 @@ pnpm install
 
 ### 3. Set Up Environment Variables
 
-Create a `.env` file in the root directory:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in the required values (see [Environment Variables](#environment-variables) section).
-
-### 4. Set Up Database
-
-1. Create a PostgreSQL database:
-```bash
-createdb leiindias
-```
-
-2. Run the database schema:
-```bash
-psql -d leiindias -f prisma/schema.sql
-```
-
-3. (Optional) Grant permissions:
-```bash
-psql -d leiindias -f prisma/grant-permissions.sql
-```
-
-4. Initialize the database (if needed):
-```bash
-# The app will auto-initialize on first run, or you can run:
-node -r dotenv/config src/initDatabase.ts
-```
-
-### 5. Run Development Server
-
-```bash
-pnpm dev
-```
-
-The application will be available at `http://localhost:3000` (or the port specified in your `.port` file).
-
-## 🔧 Environment Variables
-
-Create a `.env` file with the following variables:
-
-### Required Variables
+Create a `.env.local` file in the root directory:
 
 ```env
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/leiindias
 
-# JWT Authentication
-JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 JWT_EXPIRES_IN=7d
 
 # Application
 NODE_ENV=development
-```
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000
 
-### Optional Variables
-
-```env
-# Public URLs (for production)
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-
-# Logging
+# Optional: Logging
 LOG_LEVEL=info
 
-# Error Reporting (Sentry)
-SENTRY_DSN=https://your-sentry-dsn
-SENTRY_ENVIRONMENT=production
+# Optional: Error Reporting (Sentry)
+SENTRY_DSN=your-sentry-dsn
+SENTRY_ENVIRONMENT=development
 ```
+
+### 4. Set Up Database
+
+Run the database schema:
+
+```bash
+# Connect to your PostgreSQL database and run:
+psql -U your_user -d leiindias -f prisma/schema.sql
+
+# Or if you need to grant permissions:
+psql -U your_user -d leiindias -f prisma/grant-permissions.sql
+```
+
+### 5. Initialize Database (Optional)
+
+If you need to seed initial data:
+
+```bash
+# Run the initialization script
+pnpm tsx src/initDatabase.ts
+```
+
+### 6. Run Development Server
+
+```bash
+pnpm dev
+```
+
+The application will be available at `http://localhost:3000`
 
 ## 📜 Available Scripts
 
 - `pnpm dev` - Start development server with custom port handling
-- `pnpm dev:fixed` - Start development server on default port 3000
+- `pnpm dev:fixed` - Start development server (standard Next.js)
 - `pnpm build` - Build the application for production
 - `pnpm start` - Start production server with custom port handling
-- `pnpm start:fixed` - Start production server on default port 3000
+- `pnpm start:fixed` - Start production server (standard Next.js)
 - `pnpm start:prod` - Start production server with NODE_ENV=production
 - `pnpm lint` - Run ESLint
 - `pnpm check:console-logs` - Check for console.log statements
@@ -135,162 +113,89 @@ leiindias/
 │   ├── ui/                # UI primitives (Radix UI)
 │   └── widgets/           # Widget components
 ├── lib/                   # Utility libraries
-├── store/                 # Zustand state management
-├── hooks/                 # Custom React hooks
 ├── prisma/                # Database schema
-├── public/                # Static assets
-└── scripts/               # Build and utility scripts
+├── scripts/               # Build and utility scripts
+├── store/                 # Zustand state management
+└── types/                 # TypeScript type definitions
 ```
 
-## 🐳 Docker Deployment
+## 🚢 Deployment
 
-### Build Docker Image
+For detailed deployment instructions, see the [Deployment Guide](./docs/DEPLOYMENT.md).
 
-```bash
-docker build -t leiindias .
+### Quick Start
+
+- **Netlify**: See [Deployment Guide - Netlify](./docs/DEPLOYMENT.md#netlify-deployment)
+- **AWS**: See [Deployment Guide - AWS](./docs/DEPLOYMENT.md#aws-deployment)
+- **GitHub Setup**: See [GitHub Setup Guide](./docs/SETUP_GITHUB.md)
+
+## 🔧 Configuration
+
+### Database
+
+The application uses PostgreSQL. Ensure your database is accessible and the schema is applied:
+
+```sql
+-- Run the schema
+\i prisma/schema.sql
+
+-- Grant necessary permissions
+\i prisma/grant-permissions.sql
 ```
 
-### Run Docker Container
+### Environment Variables
 
-```bash
-docker run -p 3000:3000 \
-  -e DATABASE_URL=postgresql://user:password@host:5432/leiindias \
-  -e JWT_SECRET=your-jwt-secret \
-  -e NODE_ENV=production \
-  leiindias
-```
+All environment variables are validated at startup. See `lib/env-validation.ts` for the complete schema.
 
-### Docker Compose (Example)
+**Required:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Secret key for JWT tokens (min 32 characters)
 
-Create a `docker-compose.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/leiindias
-      - JWT_SECRET=your-jwt-secret
-      - NODE_ENV=production
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=leiindias
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
-Run with:
-```bash
-docker-compose up -d
-```
-
-## ☁️ Deployment
-
-### Vercel
-
-1. Push your code to GitHub
-2. Import your repository in [Vercel](https://vercel.com)
-3. Add environment variables in Vercel dashboard
-4. Deploy!
-
-Vercel will automatically detect Next.js and configure the build settings.
-
-### Railway
-
-1. Push your code to GitHub
-2. Create a new project in [Railway](https://railway.app)
-3. Add a PostgreSQL database service
-4. Add your application service
-5. Connect your GitHub repository
-6. Add environment variables
-7. Deploy!
-
-### Other Platforms
-
-The application can be deployed to any platform that supports Node.js:
-- **Render**: Connect GitHub repo and add environment variables
-- **DigitalOcean App Platform**: Similar setup to Railway
-- **AWS/Azure/GCP**: Use container services or serverless functions
-
-## 🔐 Security Features
-
-- **CSRF Protection**: Token-based CSRF protection for state-changing operations
-- **Rate Limiting**: In-memory rate limiting to prevent abuse
-- **Input Sanitization**: HTML sanitization for user-generated content
-- **JWT Authentication**: Secure token-based authentication
-- **Security Headers**: Comprehensive security headers in Next.js config
-- **Password Hashing**: bcryptjs for secure password storage
+**Optional:**
+- `NEXT_PUBLIC_APP_URL` - Public application URL
+- `NEXT_PUBLIC_API_URL` - Public API URL
+- `LOG_LEVEL` - Logging level (fatal, error, warn, info, debug, trace)
+- `SENTRY_DSN` - Sentry error tracking DSN
+- `SENTRY_ENVIRONMENT` - Sentry environment name
 
 ## 🧪 Testing
 
 ```bash
-# Run linting
+# Run linter
 pnpm lint
 
 # Check for console logs
 pnpm check:console-logs
 ```
 
-## 📝 Database Management
-
-### Initialize Database
-
-The database will auto-initialize on first API call, or you can manually initialize:
-
-```bash
-node -r dotenv/config src/initDatabase.ts
-```
-
-### Database Schema
-
-The schema is defined in `prisma/schema.sql`. Key tables include:
-- `User` - Customer accounts
-- `Admin` - Admin accounts
-- `Product` - Product catalog
-- `Category` - Product categories
-- `Order` - Customer orders
-- `Inquiry` - RFQ inquiries
-- `Blog` - Blog posts
-- `Career` - Job postings
-
 ## 🤝 Contributing
 
+See the [Contributing Guide](.github/CONTRIBUTING.md) for detailed guidelines.
+
+Quick start:
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 📝 License
 
-This project is private and proprietary.
+This project is proprietary and confidential. All rights reserved.
 
 ## 🆘 Support
 
-For issues and questions:
-- Open an issue on GitHub
-- Contact the development team
+For support, email support@leiindias.com or create an issue in the repository.
 
-## 🔄 CI/CD
+## 🔗 Links
 
-This project uses GitHub Actions for continuous integration. See `.github/workflows/` for workflow definitions.
-
-- **CI Workflow**: Runs on every push/PR (lint, build, type check)
-- **Deploy Workflow**: Deploys to production on main branch (if configured)
+- **Website**: https://leiindias.com
+- **Documentation**: See [docs/](./docs/) folder
+  - [Deployment Guide](./docs/DEPLOYMENT.md)
+  - [GitHub Setup Guide](./docs/SETUP_GITHUB.md)
+  - [Performance Optimizations](./docs/PERFORMANCE_OPTIMIZATIONS.md)
+- **API Documentation**: [Coming Soon]
 
 ---
 
-Built with ❤️ using Next.js, TypeScript, and PostgreSQL
+Built with ❤️ by LEI Indias Team

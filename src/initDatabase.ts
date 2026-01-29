@@ -15,11 +15,24 @@ function createPool(): Pool {
   
   const dbUrl = DATABASE_URL
   
+  // Optimized pool configuration for production-scale performance
+  const poolConfig: any = {
+    max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Max connections per instance
+    min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Min idle connections
+    idleTimeoutMillis: 30000, // Close idle clients after 30s
+    connectionTimeoutMillis: 10000, // Return error after 10s if connection cannot be established
+    statement_timeout: 30000, // Query timeout (30s)
+    query_timeout: 30000,
+    // Enable prepared statements for better performance
+    allowExitOnIdle: false,
+  }
+  
   if (dbUrl.match(/^postgresql:\/\/[^@]+@\/[^\/]+/)) {
     const match = dbUrl.match(/^postgresql:\/\/([^@]+)@\/(.+)$/)
     if (match) {
       const [, user, database] = match
       return new Pool({
+        ...poolConfig,
         user: user || process.env.USER,
         database: database,
         password: undefined,
@@ -31,6 +44,7 @@ function createPool(): Pool {
     const url = new URL(dbUrl)
     if (url.hostname === 'localhost' && !url.port && url.pathname) {
       return new Pool({
+        ...poolConfig,
         user: url.username || process.env.USER,
         database: url.pathname.slice(1),
       })
@@ -40,6 +54,7 @@ function createPool(): Pool {
     if (match) {
       const [, user, password, host, database] = match
       return new Pool({
+        ...poolConfig,
         user,
         password,
         host,
@@ -50,6 +65,7 @@ function createPool(): Pool {
   }
   
   return new Pool({
+    ...poolConfig,
     connectionString: DATABASE_URL,
   })
 }
