@@ -19,6 +19,12 @@ import {
   Phone,
   Image as ImageIcon,
   FolderTree,
+  Building2,
+  Users,
+  Settings,
+  FileCheck,
+  ArrowLeftRight,
+  Wrench,
 } from 'lucide-react'
 
 export default function AdminLayout({
@@ -84,6 +90,13 @@ export default function AdminLayout({
     { href: '/admin/blogs', label: 'Blogs', icon: FileText },
     { href: '/admin/careers', label: 'Careers', icon: Briefcase },
     { href: '/admin/contact-info', label: 'Contact Info', icon: Phone },
+    { href: '/admin/authorised-distributors', label: 'Authorised Distributors', icon: Building2 },
+    { href: '/admin/principal-partners', label: 'Principal Partners', icon: Users },
+    { href: '/admin/about-us', label: 'About Us', icon: FileText },
+    { href: '/admin/technical-support', label: 'Technical Support', icon: Settings },
+    { href: '/admin/company-policies', label: 'Company Policies', icon: FileCheck },
+    { href: '/admin/returns', label: 'Returns', icon: ArrowLeftRight },
+    { href: '/admin/technical-details', label: 'Technical Details', icon: Wrench },
   ]
 
   return (
@@ -131,7 +144,7 @@ export default function AdminLayout({
             </Link>
           </div>
 
-          <nav className="p-4 space-y-2">
+          <nav className="p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-200px)]">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href

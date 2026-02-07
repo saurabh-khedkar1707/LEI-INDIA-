@@ -5,11 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Wrench, FileText, Video, MessageSquare, Download, BookOpen } from "lucide-react"
 import Link from "next/link"
+import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
   title: "Technical Support",
   description: "Get technical support for our products. Access documentation, guides, and expert assistance.",
 }
+
+export const dynamic = 'force-dynamic'
 
 const supportOptions = [
   {
@@ -80,7 +83,31 @@ const supportTopics = [
   },
 ]
 
-export default function TechnicalSupportPage() {
+async function getTechnicalSupportContent() {
+  try {
+    const result = await pgPool.query(
+      `
+      SELECT id, section, title, content, "displayOrder", "createdAt", "updatedAt"
+      FROM "TechnicalSupportContent"
+      ORDER BY "displayOrder" ASC, "createdAt" ASC
+      `,
+    )
+    return result.rows
+  } catch (error) {
+    console.error('Failed to fetch technical support content:', error)
+    return []
+  }
+}
+
+function getContentBySection(contents: any[], section: string) {
+  return contents.find(c => c.section === section)
+}
+
+export default async function TechnicalSupportPage() {
+  const contents = await getTechnicalSupportContent()
+  const heroContent = getContentBySection(contents, 'hero')
+  const contactContent = getContentBySection(contents, 'contact-info')
+
   return (
     <>
       <Header />
@@ -89,12 +116,26 @@ export default function TechnicalSupportPage() {
         <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Technical Support
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Expert technical assistance for all our products
-              </p>
+              {heroContent ? (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    {heroContent.title || 'Technical Support'}
+                  </h1>
+                  <div 
+                    className="text-xl text-gray-600 mb-8 prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: heroContent.content }}
+                  />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Technical Support
+                  </h1>
+                  <p className="text-xl text-gray-600 mb-8">
+                    Expert technical assistance for all our products
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -170,28 +211,39 @@ export default function TechnicalSupportPage() {
             <div className="max-w-4xl mx-auto">
               <Card className="bg-primary/5 border-primary/20">
                 <CardHeader>
-                  <CardTitle className="text-2xl">Need Direct Technical Support?</CardTitle>
-                  <CardDescription className="text-base">
-                    Our technical support team is available to help with complex issues, custom configurations, and specialized technical questions.
-                  </CardDescription>
+                  <CardTitle className="text-2xl">
+                    {contactContent?.title || 'Need Direct Technical Support?'}
+                  </CardTitle>
+                  {contactContent ? (
+                    <div 
+                      className="text-base prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: contactContent.content }}
+                    />
+                  ) : (
+                    <CardDescription className="text-base">
+                      Our technical support team is available to help with complex issues, custom configurations, and specialized technical questions.
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-semibold mb-2">When contacting technical support, please provide:</p>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                        <li>Product model number and part number</li>
-                        <li>Detailed description of the issue or question</li>
-                        <li>Error messages or symptoms (if applicable)</li>
-                        <li>Your application environment and requirements</li>
-                        <li>Photos or diagrams (if helpful)</li>
-                      </ul>
+                  {!contactContent && (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="font-semibold mb-2">When contacting technical support, please provide:</p>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
+                          <li>Product model number and part number</li>
+                          <li>Detailed description of the issue or question</li>
+                          <li>Error messages or symptoms (if applicable)</li>
+                          <li>Your application environment and requirements</li>
+                          <li>Photos or diagrams (if helpful)</li>
+                        </ul>
+                      </div>
                     </div>
-                    <div className="pt-4">
-                      <Button asChild size="lg" className="w-full sm:w-auto">
-                        <Link href="/contact">Contact Technical Support</Link>
-                      </Button>
-                    </div>
+                  )}
+                  <div className="pt-4">
+                    <Button asChild size="lg" className="w-full sm:w-auto">
+                      <Link href="/contact">Contact Technical Support</Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

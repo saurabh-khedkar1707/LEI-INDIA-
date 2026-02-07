@@ -5,11 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react"
 import Link from "next/link"
+import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
   title: "Returns & Refunds",
   description: "Learn about our return policy, refund process, and how to return products.",
 }
+
+export const dynamic = 'force-dynamic'
 
 const returnSteps = [
   {
@@ -61,7 +64,33 @@ const returnPolicy = [
   },
 ]
 
-export default function ReturnsPage() {
+async function getReturnsContent() {
+  try {
+    const result = await pgPool.query(
+      `
+      SELECT id, section, title, content, "displayOrder", "createdAt", "updatedAt"
+      FROM "ReturnsContent"
+      ORDER BY "displayOrder" ASC, "createdAt" ASC
+      `,
+    )
+    return result.rows
+  } catch (error) {
+    console.error('Failed to fetch returns content:', error)
+    return []
+  }
+}
+
+function getContentBySection(contents: Array<{ section: string; title?: string; content: string }>, section: string) {
+  return contents.find(c => c.section === section)
+}
+
+export default async function ReturnsPage() {
+  const contents = await getReturnsContent()
+  const heroContent = getContentBySection(contents, 'hero')
+  const returnProcessContent = getContentBySection(contents, 'return-process')
+  const returnPolicyContent = getContentBySection(contents, 'return-policy')
+  const importantInfoContent = getContentBySection(contents, 'important-info')
+
   return (
     <>
       <Header />
@@ -70,12 +99,26 @@ export default function ReturnsPage() {
         <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Returns & Refunds
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                We want you to be completely satisfied with your purchase
-              </p>
+              {heroContent ? (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    {heroContent.title || 'Returns & Refunds'}
+                  </h1>
+                  <div 
+                    className="text-xl text-gray-600 mb-8 prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: heroContent.content }}
+                  />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    Returns & Refunds
+                  </h1>
+                  <p className="text-xl text-gray-600 mb-8">
+                    We want you to be completely satisfied with your purchase
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -83,14 +126,30 @@ export default function ReturnsPage() {
         {/* Return Process */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                How to Return an Item
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Follow these simple steps to return your purchase
-              </p>
-            </div>
+            {returnProcessContent ? (
+              <div className="max-w-4xl mx-auto">
+                {returnProcessContent.title && (
+                  <div className="text-center mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                      {returnProcessContent.title}
+                    </h2>
+                  </div>
+                )}
+                <div 
+                  className="prose prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: returnProcessContent.content }}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    How to Return an Item
+                  </h2>
+                  <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Follow these simple steps to return your purchase
+                  </p>
+                </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
               {returnSteps.map((item, index) => {
                 const Icon = item.icon
@@ -110,6 +169,8 @@ export default function ReturnsPage() {
                 )
               })}
             </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -117,29 +178,45 @@ export default function ReturnsPage() {
         <section className="py-16 bg-gray-50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-                Return Policy
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {returnPolicy.map((item, index) => {
-                  const Icon = item.icon
-                  return (
-                    <Card key={index}>
-                      <CardHeader>
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <Icon className="h-6 w-6 text-primary" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg mb-2">{item.title}</CardTitle>
-                            <CardDescription>{item.description}</CardDescription>
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  )
-                })}
-              </div>
+              {returnPolicyContent ? (
+                <>
+                  {returnPolicyContent.title && (
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
+                      {returnPolicyContent.title}
+                    </h2>
+                  )}
+                  <div 
+                    className="prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: returnPolicyContent.content }}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
+                    Return Policy
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {returnPolicy.map((item, index) => {
+                      const Icon = item.icon
+                      return (
+                        <Card key={index}>
+                          <CardHeader>
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Icon className="h-6 w-6 text-primary" />
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg mb-2">{item.title}</CardTitle>
+                                <CardDescription>{item.description}</CardDescription>
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                  </>
+                )}
             </div>
           </div>
         </section>
@@ -153,18 +230,27 @@ export default function ReturnsPage() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="h-6 w-6 text-amber-600 mt-1" />
                     <div>
-                      <CardTitle className="text-lg text-amber-900">Important Information</CardTitle>
+                      <CardTitle className="text-lg text-amber-900">
+                        {importantInfoContent?.title || 'Important Information'}
+                      </CardTitle>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 text-amber-800">
-                  <ul className="list-disc list-inside space-y-2">
-                    <li>Return shipping costs are the responsibility of the customer unless the item is defective or incorrect.</li>
-                    <li>Refunds will be issued to the original payment method used for the purchase.</li>
-                    <li>Processing time for refunds is 5-7 business days after we receive the returned item.</li>
-                    <li>For damaged or defective items, please contact us immediately for expedited processing.</li>
-                    <li>International returns may be subject to customs fees and duties.</li>
-                  </ul>
+                  {importantInfoContent ? (
+                    <div 
+                      className="prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: importantInfoContent.content }}
+                    />
+                  ) : (
+                    <ul className="list-disc list-inside space-y-2">
+                      <li>Return shipping costs are the responsibility of the customer unless the item is defective or incorrect.</li>
+                      <li>Refunds will be issued to the original payment method used for the purchase.</li>
+                      <li>Processing time for refunds is 5-7 business days after we receive the returned item.</li>
+                      <li>For damaged or defective items, please contact us immediately for expedited processing.</li>
+                      <li>International returns may be subject to customs fees and duties.</li>
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -122,7 +122,13 @@ export default function AdminProductsPage() {
   })
 
   useEffect(() => {
-    fetchProducts()
+    // Fetch data on mount
+    fetchProducts().catch((error) => {
+      console.error('Error fetching products in useEffect:', error)
+      setError('Failed to load products. Please refresh the page.')
+      setIsLoading(false)
+    })
+    // fetchCategories already has error handling, no need to wrap
     fetchCategories()
   }, [])
 
@@ -149,10 +155,19 @@ export default function AdminProductsPage() {
         '/api/products?limit=10000',
       )
       // Handle both paginated and non-paginated responses
-      setProducts(Array.isArray(data) ? data : (data.products || []))
+      if (Array.isArray(data)) {
+        setProducts(data)
+      } else if (data && typeof data === 'object' && 'products' in data) {
+        setProducts(Array.isArray(data.products) ? data.products : [])
+      } else {
+        setProducts([])
+      }
     } catch (error) {
+      console.error('Error fetching products:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to load products. Please refresh the page or try again later.'
       setError(errorMessage)
+      // Set empty array to prevent rendering issues
+      setProducts([])
     } finally {
       setIsLoading(false)
     }
@@ -396,7 +411,7 @@ export default function AdminProductsPage() {
     reset({
       images: [],
       documents: [],
-      categoryId: undefined,
+      categoryId: undefined, // Will be converted to __none__ for Select component
       datasheetUrl: '',
       drawingUrl: '',
     })
@@ -412,7 +427,7 @@ export default function AdminProductsPage() {
     reset({
       mpn: product.mpn || '',
       description: product.description || '',
-      categoryId: product.categoryId || '',
+      categoryId: product.categoryId || undefined,
       productType: product.productType || '',
       coupling: product.coupling || '',
       degreeOfProtection: product.degreeOfProtection || undefined,
@@ -465,8 +480,10 @@ export default function AdminProductsPage() {
         documents: productDocuments || [],
         datasheetUrl: datasheetUrl || undefined,
         drawingUrl: drawingUrl || undefined,
-        // Ensure categoryId is valid UUID or undefined
-        categoryId: data.categoryId && data.categoryId.trim() ? data.categoryId.trim() : undefined,
+        // Ensure categoryId is valid UUID or undefined (handle __none__ special value)
+        categoryId: data.categoryId && data.categoryId.trim() && data.categoryId !== '__none__' 
+          ? data.categoryId.trim() 
+          : undefined,
       }
 
       // Get CSRF token for state-changing operations
@@ -667,14 +684,17 @@ export default function AdminProductsPage() {
             <div>
               <Label htmlFor="categoryId">Category</Label>
               <Select
-                onValueChange={(value) => setValue('categoryId', value)}
-                value={watch('categoryId') || ''}
+                onValueChange={(value) => {
+                  // Convert "__none__" to undefined for "no category"
+                  setValue('categoryId', value === '__none__' ? undefined : value)
+                }}
+                value={watch('categoryId') || '__none__'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px] overflow-y-auto">
-                  <SelectItem value="">No Category</SelectItem>
+                  <SelectItem value="__none__">No Category</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}

@@ -5,11 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Globe, Users, Award, Target, Zap } from "lucide-react"
 import Link from "next/link"
+import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
   title: "About Us",
   description: "Learn about LEI Indias - a leading B2B supplier of industrial connectors, cables, and automation solutions with global reach.",
 }
+
+export const dynamic = 'force-dynamic'
 
 const values = [
   {
@@ -41,7 +44,33 @@ const stats = [
   { label: "Happy Customers", value: "1000+" },
 ]
 
-export default function AboutPage() {
+async function getAboutUsContent() {
+  try {
+    const result = await pgPool.query(
+      `
+      SELECT id, section, title, content, "displayOrder", "createdAt", "updatedAt"
+      FROM "AboutUsContent"
+      ORDER BY "displayOrder" ASC, "createdAt" ASC
+      `,
+    )
+    return result.rows
+  } catch (error) {
+    console.error('Failed to fetch about us content:', error)
+    return []
+  }
+}
+
+function getContentBySection(contents: any[], section: string) {
+  return contents.find(c => c.section === section)
+}
+
+export default async function AboutPage() {
+  const contents = await getAboutUsContent()
+  const heroContent = getContentBySection(contents, 'hero')
+  const storyContent = getContentBySection(contents, 'story')
+  const missionContent = getContentBySection(contents, 'mission')
+  const visionContent = getContentBySection(contents, 'vision')
+
   return (
     <>
       <Header />
@@ -50,12 +79,26 @@ export default function AboutPage() {
         <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                About LEI Indias
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                Leading the way in industrial connectivity solutions
-              </p>
+              {heroContent ? (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    {heroContent.title || 'About LEI Indias'}
+                  </h1>
+                  <div 
+                    className="text-xl text-gray-600 mb-8 prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: heroContent.content }}
+                  />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    About LEI Indias
+                  </h1>
+                  <p className="text-xl text-gray-600 mb-8">
+                    Leading the way in industrial connectivity solutions
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -64,20 +107,36 @@ export default function AboutPage() {
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Our Story
-              </h2>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-600 mb-4">
-                  LEI Indias was founded with a vision to provide high-quality industrial connectivity solutions to businesses worldwide. Over the years, we have established ourselves as a trusted partner in the industrial automation and connectivity space.
-                </p>
-                <p className="text-gray-600 mb-4">
-                  We specialize in M12, M8, and RJ45 industrial connectors, PROFINET products, and custom cable solutions. Our commitment to quality, technical excellence, and customer service has made us a preferred supplier for leading industrial automation companies.
-                </p>
-                <p className="text-gray-600">
-                  Today, we serve customers across multiple industries, from manufacturing and automation to telecommunications and energy. Our global network of partners ensures that we can deliver solutions wherever they&apos;re needed, with no minimum order quantities and comprehensive technical support.
-                </p>
-              </div>
+              {storyContent ? (
+                <>
+                  {storyContent.title && (
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                      {storyContent.title}
+                    </h2>
+                  )}
+                  <div 
+                    className="prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: storyContent.content }}
+                  />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                    Our Story
+                  </h2>
+                  <div className="prose prose-lg max-w-none">
+                    <p className="text-gray-600 mb-4">
+                      LEI Indias was founded with a vision to provide high-quality industrial connectivity solutions to businesses worldwide. Over the years, we have established ourselves as a trusted partner in the industrial automation and connectivity space.
+                    </p>
+                    <p className="text-gray-600 mb-4">
+                      We specialize in M12, M8, and RJ45 industrial connectors, PROFINET products, and custom cable solutions. Our commitment to quality, technical excellence, and customer service has made us a preferred supplier for leading industrial automation companies.
+                    </p>
+                    <p className="text-gray-600">
+                      Today, we serve customers across multiple industries, from manufacturing and automation to telecommunications and energy. Our global network of partners ensures that we can deliver solutions wherever they&apos;re needed, with no minimum order quantities and comprehensive technical support.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -136,26 +195,40 @@ export default function AboutPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Target className="h-6 w-6 text-primary" />
-                    Our Mission
+                    {missionContent?.title || 'Our Mission'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">
-                    To provide world-class industrial connectivity solutions that enable our customers to achieve their automation goals. We are committed to quality, innovation, and exceptional customer service in everything we do.
-                  </p>
+                  {missionContent ? (
+                    <div 
+                      className="text-gray-600 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: missionContent.content }}
+                    />
+                  ) : (
+                    <p className="text-gray-600">
+                      To provide world-class industrial connectivity solutions that enable our customers to achieve their automation goals. We are committed to quality, innovation, and exceptional customer service in everything we do.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Globe className="h-6 w-6 text-primary" />
-                    Our Vision
+                    {visionContent?.title || 'Our Vision'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600">
-                    To become the global leader in industrial connectivity solutions, recognized for our technical expertise, product quality, and commitment to customer success. We envision a future where seamless connectivity drives industrial innovation.
-                  </p>
+                  {visionContent ? (
+                    <div 
+                      className="text-gray-600 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: visionContent.content }}
+                    />
+                  ) : (
+                    <p className="text-gray-600">
+                      To become the global leader in industrial connectivity solutions, recognized for our technical expertise, product quality, and commitment to customer success. We envision a future where seamless connectivity drives industrial innovation.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>

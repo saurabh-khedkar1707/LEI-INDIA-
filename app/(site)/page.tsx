@@ -101,12 +101,12 @@ export default async function HomePage() {
     },
     {
       icon: CheckCircle2,
-      title: "Kitting Facility",
+      title: "Authorised Distributor",
       description: "Custom kitting and assembly services available",
     },
     {
       icon: Globe,
-      title: "Global Partners",
+      title: "Principal Partners",
       description: "Worldwide distribution network and partnerships",
     },
   ]

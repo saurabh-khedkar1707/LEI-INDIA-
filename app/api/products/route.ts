@@ -205,7 +205,27 @@ export async function GET(req: NextRequest) {
       )
     }
     
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+    // Check if table doesn't exist
+    if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
+      return NextResponse.json(
+        { 
+          error: 'Database table not found',
+          message: 'The Product table does not exist. Please check your database setup.',
+          code: 'TABLE_NOT_FOUND',
+          details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        },
+        { status: 500 }
+      )
+    }
+    
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch products',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
+        code: error?.code,
+      },
+      { status: 500 }
+    )
   }
 }
 

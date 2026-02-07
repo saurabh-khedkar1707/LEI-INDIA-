@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Product } from "@/types"
 import { AddToRFQButton } from "@/components/features/AddToRFQButton"
 import { Download, CheckCircle2 } from "lucide-react"
+import { pgPool } from "@/lib/pg"
 
 interface ProductPageProps {
   params: { id: string }
@@ -32,6 +33,24 @@ async function getProduct(id: string): Promise<Product | null> {
   return await response.json()
 }
 
+async function getTechnicalDetails(productId: string) {
+  try {
+    const result = await pgPool.query(
+      `
+      SELECT id, "productId", tab, title, content, "displayOrder", "createdAt", "updatedAt"
+      FROM "TechnicalDetails"
+      WHERE ("productId" = $1 OR "productId" IS NULL)
+      ORDER BY "displayOrder" ASC, "createdAt" ASC
+      `,
+      [productId],
+    )
+    return result.rows
+  } catch (error) {
+    console.error('Failed to fetch technical details:', error)
+    return []
+  }
+}
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const product = await getProduct(params.id)
   
@@ -50,6 +69,75 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       images: product.images,
     },
   }
+}
+
+async function TechnicalDetailsTabs({ productId }: { productId: string }) {
+  const details = await getTechnicalDetails(productId)
+  const salesDetails = details.filter(d => d.tab === 'sales')
+  const technicalDetails = details.filter(d => d.tab === 'technical')
+
+  // Don't show section if no details exist
+  if (salesDetails.length === 0 && technicalDetails.length === 0) {
+    return null
+  }
+
+  return (
+    <Card className="mb-12">
+      <CardHeader>
+        <CardTitle>Technical Details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="sales" className="w-full">
+          <TabsList>
+            <TabsTrigger value="sales">Sales</TabsTrigger>
+            <TabsTrigger value="technical">Technical</TabsTrigger>
+          </TabsList>
+          <TabsContent value="sales" className="mt-4">
+            {salesDetails.length > 0 ? (
+              <div className="space-y-4">
+                {salesDetails.map((detail) => (
+                  <div key={detail.id}>
+                    {detail.title && (
+                      <h3 className="text-lg font-semibold mb-2">{detail.title}</h3>
+                    )}
+                    {detail.content && (
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: detail.content }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No sales information available.</p>
+            )}
+          </TabsContent>
+          <TabsContent value="technical" className="mt-4">
+            {technicalDetails.length > 0 ? (
+              <div className="space-y-4">
+                {technicalDetails.map((detail) => (
+                  <div key={detail.id}>
+                    {detail.title && (
+                      <h3 className="text-lg font-semibold mb-2">{detail.title}</h3>
+                    )}
+                    {detail.content && (
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: detail.content }}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No technical information available.</p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -199,6 +287,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </Card>
             </div>
           </div>
+
+          {/* Technical Details - Sales and Technical Tabs */}
+          <TechnicalDetailsTabs productId={product.id} />
 
           {/* Technical Specifications */}
           <Card className="mb-12">

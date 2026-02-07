@@ -3,13 +3,17 @@ import { Header } from "@/components/shared/Header"
 import { Footer } from "@/components/shared/Footer"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Globe, Handshake, MapPin, CheckCircle2, Building2 } from "lucide-react"
+import { Globe, Handshake, MapPin, CheckCircle2, Building2, Mail, Phone, ExternalLink } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
-  title: "Global Partners",
-  description: "Our network of global partners ensures reliable supply and support worldwide.",
+  title: "Principal Partners",
+  description: "Our network of principal partners ensures reliable supply and support worldwide.",
 }
+
+export const dynamic = 'force-dynamic'
 
 const regions = [
   {
@@ -57,7 +61,27 @@ const partnerBenefits = [
   },
 ]
 
-export default function GlobalPartnersPage() {
+async function getPrincipalPartners() {
+  try {
+    const result = await pgPool.query(
+      `
+      SELECT id, "companyName", logo, "companyDetails", email, phone, address, website,
+             "displayOrder", active, "createdAt", "updatedAt"
+      FROM "PrincipalPartner"
+      WHERE active = true
+      ORDER BY "displayOrder" ASC, "createdAt" DESC
+      `,
+    )
+    return result.rows
+  } catch (error) {
+    console.error('Failed to fetch principal partners:', error)
+    return []
+  }
+}
+
+export default async function PrincipalPartnersPage() {
+  const partners = await getPrincipalPartners()
+
   return (
     <>
       <Header />
@@ -67,7 +91,7 @@ export default function GlobalPartnersPage() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Global Partners
+                Principal Partners
               </h1>
               <p className="text-xl text-gray-600 mb-8">
                 A worldwide network of trusted partners delivering excellence
@@ -142,6 +166,81 @@ export default function GlobalPartnersPage() {
           </div>
         </section>
 
+        {/* Principal Partners List */}
+        {partners.length > 0 && (
+          <section className="py-16 bg-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  Our Principal Partners
+                </h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                  Trusted partners delivering excellence worldwide
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                {partners.map((partner) => (
+                  <Card key={partner.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      {partner.logo && (
+                        <div className="mb-4 flex justify-center">
+                          <Image
+                            src={partner.logo}
+                            alt={partner.companyName}
+                            width={120}
+                            height={60}
+                            className="object-contain"
+                          />
+                        </div>
+                      )}
+                      <CardTitle className="text-xl">{partner.companyName}</CardTitle>
+                      {partner.companyDetails && (
+                        <CardDescription className="mt-2">
+                          {partner.companyDetails}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {partner.email && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Mail className="h-4 w-4" />
+                          <a href={`mailto:${partner.email}`} className="hover:text-primary">
+                            {partner.email}
+                          </a>
+                        </div>
+                      )}
+                      {partner.phone && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone className="h-4 w-4" />
+                          <a href={`tel:${partner.phone}`} className="hover:text-primary">
+                            {partner.phone}
+                          </a>
+                        </div>
+                      )}
+                      {partner.address && (
+                        <div className="flex items-start gap-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4 mt-0.5" />
+                          <span>{partner.address}</span>
+                        </div>
+                      )}
+                      {partner.website && (
+                        <div className="pt-2">
+                          <Button asChild variant="outline" size="sm" className="w-full">
+                            <a href={partner.website} target="_blank" rel="noopener noreferrer">
+                              Visit Website
+                              <ExternalLink className="h-4 w-4 ml-2" />
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Become a Partner */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -150,7 +249,7 @@ export default function GlobalPartnersPage() {
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <Handshake className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-2xl">Become a Global Partner</CardTitle>
+                    <CardTitle className="text-2xl">Become a Principal Partner</CardTitle>
                   </div>
                   <CardDescription>
                     Join our network of trusted partners and help us serve customers worldwide
