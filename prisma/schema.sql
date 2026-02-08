@@ -1,5 +1,6 @@
 -- PostgreSQL schema for Lei Indias app
 -- This matches the table and column names used in app/api/* routes.
+-- Consolidated migration - includes all tables, indexes, and constraints
 
 CREATE TABLE IF NOT EXISTS "User" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,6 +74,7 @@ CREATE TABLE IF NOT EXISTS "Product" (
   images JSONB NOT NULL DEFAULT '[]'::jsonb,
   documents JSONB NOT NULL DEFAULT '[]'::jsonb,
   "datasheetUrl" TEXT,
+  "drawingUrl" TEXT,
   -- Extended product specifications
   mpn TEXT,
   "productType" TEXT,
@@ -204,6 +206,89 @@ CREATE TABLE IF NOT EXISTS "HeroSlide" (
   "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- CMS Content Management Tables
+CREATE TABLE IF NOT EXISTS "AuthorisedDistributor" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyName" TEXT NOT NULL,
+  logo TEXT,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  website TEXT,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "PrincipalPartner" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "companyName" TEXT NOT NULL,
+  logo TEXT,
+  "companyDetails" TEXT,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  website TEXT,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "TechnicalDetails" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "productId" UUID REFERENCES "Product"(id) ON DELETE CASCADE,
+  tab TEXT NOT NULL CHECK (tab IN ('sales', 'technical')),
+  title TEXT,
+  content TEXT,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "AboutUsContent" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  section TEXT NOT NULL UNIQUE,
+  title TEXT,
+  content TEXT NOT NULL,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "TechnicalSupportContent" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  section TEXT NOT NULL UNIQUE,
+  title TEXT,
+  content TEXT NOT NULL,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "CompanyPolicy" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  "policyType" TEXT,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "ReturnsContent" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  section TEXT NOT NULL UNIQUE,
+  title TEXT,
+  content TEXT NOT NULL,
+  "displayOrder" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indexes to support common queries
 CREATE INDEX IF NOT EXISTS idx_user_email ON "User"(email);
 CREATE INDEX IF NOT EXISTS idx_user_is_active ON "User"("isActive");
@@ -215,8 +300,12 @@ CREATE INDEX IF NOT EXISTS idx_product_in_stock ON "Product"("inStock");
 CREATE INDEX IF NOT EXISTS idx_product_connector_type ON "Product"("connectorType");
 CREATE INDEX IF NOT EXISTS idx_product_coding ON "Product"(coding);
 CREATE INDEX IF NOT EXISTS idx_product_pins ON "Product"(pins);
+CREATE INDEX IF NOT EXISTS idx_product_mpn ON "Product"("mpn") WHERE "mpn" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_product_halogen_free ON "Product"("halogenFree") WHERE "halogenFree" = true;
+CREATE INDEX IF NOT EXISTS idx_product_drag_chain ON "Product"("cableDragChainSuitable") WHERE "cableDragChainSuitable" = true;
 CREATE INDEX IF NOT EXISTS idx_order_created_at ON "Order"("createdAt");
 CREATE INDEX IF NOT EXISTS idx_order_status ON "Order"(status);
+CREATE INDEX IF NOT EXISTS idx_order_email ON "Order"(email);
 CREATE INDEX IF NOT EXISTS idx_orderitem_order ON "OrderItem"("orderId");
 CREATE INDEX IF NOT EXISTS idx_orderitem_product ON "OrderItem"("productId");
 CREATE INDEX IF NOT EXISTS idx_category_slug ON "Category"(slug);
@@ -233,4 +322,18 @@ CREATE INDEX IF NOT EXISTS idx_career_slug ON "Career"(slug);
 CREATE INDEX IF NOT EXISTS idx_career_active ON "Career"(active);
 CREATE INDEX IF NOT EXISTS idx_inquiry_created_at ON "Inquiry"("createdAt");
 CREATE INDEX IF NOT EXISTS idx_inquiry_read ON "Inquiry"(read);
+CREATE INDEX IF NOT EXISTS idx_inquiry_email ON "Inquiry"(email);
+CREATE INDEX IF NOT EXISTS idx_inquiry_responded ON "Inquiry"(responded);
 
+-- CMS table indexes
+CREATE INDEX IF NOT EXISTS idx_authorised_distributor_active ON "AuthorisedDistributor"(active);
+CREATE INDEX IF NOT EXISTS idx_authorised_distributor_display_order ON "AuthorisedDistributor"("displayOrder");
+CREATE INDEX IF NOT EXISTS idx_principal_partner_active ON "PrincipalPartner"(active);
+CREATE INDEX IF NOT EXISTS idx_principal_partner_display_order ON "PrincipalPartner"("displayOrder");
+CREATE INDEX IF NOT EXISTS idx_technical_details_product ON "TechnicalDetails"("productId");
+CREATE INDEX IF NOT EXISTS idx_technical_details_tab ON "TechnicalDetails"(tab);
+CREATE INDEX IF NOT EXISTS idx_about_us_section ON "AboutUsContent"(section);
+CREATE INDEX IF NOT EXISTS idx_technical_support_section ON "TechnicalSupportContent"(section);
+CREATE INDEX IF NOT EXISTS idx_company_policy_slug ON "CompanyPolicy"(slug);
+CREATE INDEX IF NOT EXISTS idx_company_policy_active ON "CompanyPolicy"(active);
+CREATE INDEX IF NOT EXISTS idx_returns_content_section ON "ReturnsContent"(section);

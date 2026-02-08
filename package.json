@@ -10,10 +10,7 @@
     "start:fixed": "next start",
     "start:prod": "NODE_ENV=production node scripts/start-with-port.mjs",
     "lint": "next lint",
-    "check:console-logs": "node scripts/replace-console-logs.mjs",
-    "migrate:category-id": "npx --yes tsx scripts/run-migration.ts",
-    "migrate:drawing-url": "npx --yes tsx scripts/run-drawing-url-migration.ts",
-    "seed:categories-products": "npx --yes tsx scripts/seed-categories-products.ts"
+    "check:console-logs": "node scripts/replace-console-logs.mjs"
   },
   "workspaces": [],
   "dependencies": {

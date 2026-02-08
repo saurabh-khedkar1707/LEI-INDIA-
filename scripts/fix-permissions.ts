@@ -115,7 +115,10 @@ async function fixPermissions() {
       const tables = [
         'User', 'Admin', 'Category', 'Product', 'Order', 'OrderItem',
         'Inquiry', 'ContactInfo', 'Blog', 'Career', 'Resource',
-        'PasswordResetToken', 'HeroSlide'
+        'PasswordResetToken', 'HeroSlide',
+        // CMS Content Management tables (added in migrate-add-cms-content.sql)
+        'AuthorisedDistributor', 'PrincipalPartner', 'TechnicalDetails',
+        'AboutUsContent', 'TechnicalSupportContent', 'CompanyPolicy', 'ReturnsContent'
       ]
 
       for (const table of tables) {
