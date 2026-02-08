@@ -10,7 +10,8 @@
     "start:fixed": "next start",
     "start:prod": "NODE_ENV=production node scripts/start-with-port.mjs",
     "lint": "next lint",
-    "check:console-logs": "node scripts/replace-console-logs.mjs"
+    "check:console-logs": "node scripts/replace-console-logs.mjs",
+    "migrate": "psql $DATABASE_URL -f prisma/schema.sql && psql $DATABASE_URL -f prisma/migrate-add-meeting-request.sql"
   },
   "workspaces": [],
   "dependencies": {
