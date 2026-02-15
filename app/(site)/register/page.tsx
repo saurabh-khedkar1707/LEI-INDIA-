@@ -23,9 +23,7 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   company: z.string().min(2, 'Company name is required'),
   phone: z.string().min(10, 'Please enter a valid phone number'),
-  acceptTerms: z.boolean({
-    required_error: 'You must accept the terms and conditions',
-  }).refine((val) => val === true, {
+  acceptTerms: z.boolean().refine((val) => val === true, {
     message: 'You must accept the terms and conditions',
   }),
 }).refine((data) => data.password === data.confirmPassword, {
