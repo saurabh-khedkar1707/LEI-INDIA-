@@ -903,8 +903,8 @@ export default function AdminProductsPage() {
                       <TableCell className="max-w-md truncate">{product.description || 'N/A'}</TableCell>
                       <TableCell>{priceDisplay}</TableCell>
                       <TableCell>
-                        {product.inStock ? (
-                          <span className="text-green-600">{product.stockQuantity ?? 'In Stock'}</span>
+                        {product.stockQuantity != null && product.stockQuantity > 0 ? (
+                          <span className="text-green-600">{product.stockQuantity}</span>
                         ) : (
                           <span className="text-red-600">Out of Stock</span>
                         )}
