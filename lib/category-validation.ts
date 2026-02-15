@@ -11,7 +11,7 @@ export const categorySchema = z.object({
     .trim(),
   description: z.string().optional(),
   image: z.string().url().optional().or(z.literal('')),
-  parentId: z.string().optional(),
+  parentId: z.union([z.string().uuid(), z.literal('')]).optional(),
 })
 
 export const categoryUpdateSchema = categorySchema.partial()

@@ -88,6 +88,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Category not found' }, { status: 404 })
     }
 
+    // Handle parentId: empty string or null means remove parent relationship
+    let parentIdValue: string | null
+    if (parsed.parentId !== undefined) {
+      parentIdValue = parsed.parentId === '' || parsed.parentId === null ? null : parsed.parentId
+    } else {
+      parentIdValue = existing.parentId
+    }
+
     const updatedResult = await pgPool.query(
       `
       UPDATE "Category"
@@ -106,7 +114,7 @@ export async function PUT(
         parsed.slug ?? existing.slug,
         parsed.description !== undefined ? parsed.description || null : existing.description,
         parsed.image !== undefined ? parsed.image || null : existing.image,
-        parsed.parentId !== undefined ? parsed.parentId || null : existing.parentId,
+        parentIdValue,
         params.id,
       ],
     )

@@ -14,6 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import Image from 'next/image'
 import {
   Dialog,
@@ -178,7 +185,7 @@ export default function AdminCategoriesPage() {
       slug: category.slug,
       description: category.description || '',
       image: category.image || '',
-      parentId: category.parentId || '',
+      parentId: category.parentId || undefined,
     })
     setIsDialogOpen(true)
   }
@@ -190,12 +197,24 @@ export default function AdminCategoriesPage() {
     }
 
     try {
+      // Handle parentId: if it's "__none__" or empty, send empty string to remove parent relationship
+      // The API will convert empty string to null
+      let parentIdValue: string | undefined
+      if (data.parentId && data.parentId !== '__none__' && data.parentId.trim()) {
+        parentIdValue = data.parentId.trim()
+      } else {
+        // Send empty string to explicitly remove parent relationship
+        // For creates, undefined is fine (will be null in DB)
+        // For updates, empty string tells API to remove parent
+        parentIdValue = editingCategory ? '' : undefined
+      }
+
       const categoryData = {
         name: data.name.trim(),
         slug: data.slug.trim(),
         description: data.description?.trim() || undefined,
         image: categoryImage || data.image || undefined,
-        parentId: data.parentId?.trim() || undefined,
+        parentId: parentIdValue,
       }
 
       const url = editingCategory
@@ -282,6 +301,54 @@ export default function AdminCategoriesPage() {
     }
   }
 
+  // Helper function to get all descendant category IDs (to prevent circular references)
+  const getDescendantIds = (categoryId: string): string[] => {
+    const descendants: string[] = []
+    const findChildren = (id: string) => {
+      categories.forEach(cat => {
+        if (cat.parentId === id) {
+          descendants.push(cat.id)
+          findChildren(cat.id)
+        }
+      })
+    }
+    findChildren(categoryId)
+    return descendants
+  }
+
+  // Get available parent categories (exclude current category and its descendants)
+  const getAvailableParentCategories = (): Category[] => {
+    if (!editingCategory) {
+      // When creating, all categories without parents are available
+      return categories.filter(cat => !cat.parentId)
+    }
+    // When editing, exclude current category and all its descendants
+    const excludedIds = new Set([editingCategory.id, ...getDescendantIds(editingCategory.id)])
+    // Include top-level categories (no parent) that aren't excluded
+    // Also include the current parent if it exists (so it shows in the dropdown when editing)
+    const availableCategories = categories.filter(cat => 
+      !excludedIds.has(cat.id) && !cat.parentId
+    )
+    
+    // If the category being edited has a parent, include that parent in the list
+    // so it can be displayed and selected
+    if (editingCategory.parentId) {
+      const currentParent = categories.find(cat => cat.id === editingCategory.parentId)
+      if (currentParent && !availableCategories.find(cat => cat.id === currentParent.id)) {
+        availableCategories.push(currentParent)
+      }
+    }
+    
+    return availableCategories
+  }
+
+  // Get parent category name by ID
+  const getParentCategoryName = (parentId: string | undefined): string | null => {
+    if (!parentId) return null
+    const parent = categories.find(cat => cat.id === parentId)
+    return parent?.name || null
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -325,6 +392,7 @@ export default function AdminCategoriesPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
+                <TableHead>Parent Category</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -333,7 +401,7 @@ export default function AdminCategoriesPage() {
             <TableBody>
               {categories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     No categories found
                   </TableCell>
                 </TableRow>
@@ -342,6 +410,11 @@ export default function AdminCategoriesPage() {
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell className="text-gray-600">{category.slug}</TableCell>
+                    <TableCell className="text-gray-600">
+                      {getParentCategoryName(category.parentId) || (
+                        <span className="text-gray-400 italic">Top-level</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-gray-600 max-w-md truncate">
                       {category.description || '-'}
                     </TableCell>
@@ -444,14 +517,29 @@ export default function AdminCategoriesPage() {
             </div>
 
             <div>
-              <Label htmlFor="parentId">Parent Category ID (Optional)</Label>
-              <Input
-                id="parentId"
-                {...register('parentId')}
-                placeholder="Leave empty for top-level category"
-              />
+              <Label htmlFor="parentId">Parent Category (Optional)</Label>
+              <Select
+                value={watch('parentId') || '__none__'}
+                onValueChange={(value) => {
+                  setValue('parentId', value === '__none__' ? undefined : value)
+                }}
+              >
+                <SelectTrigger id="parentId">
+                  <SelectValue placeholder="Select a parent category" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
+                  <SelectItem value="__none__">No Parent (Top-level)</SelectItem>
+                  {getAvailableParentCategories().map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <p className="text-xs text-gray-500 mt-1">
-                Enter the ID of a parent category to create a nested category
+                {editingCategory
+                  ? 'Select a parent category to make this a subcategory. Current category and its subcategories are excluded to prevent circular references.'
+                  : 'Select a parent category to create a nested category'}
               </p>
               {errors.parentId && (
                 <p className="text-sm text-red-500">{errors.parentId.message}</p>
