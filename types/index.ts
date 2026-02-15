@@ -85,13 +85,14 @@ export interface RFQ {
 }
 
 export interface FilterState {
-  connectorType?: ConnectorType[]
-  coding?: ConnectorCoding[]
-  pins?: PinCount[]
-  ipRating?: IPRating[]
-  gender?: ConnectorGender[]
+  // All filter values are dynamic from database - no hardcoded enums
+  connectorType?: string[] // Dynamic from Product.connectorType
+  coding?: string[] // Dynamic from Product.coding
+  pins?: number[] // Dynamic from Product.pins
+  ipRating?: string[] // Dynamic from Product.ipRating
+  gender?: string[] // Dynamic from Product.gender
   inStock?: boolean
   search?: string
   category?: string // Category slug (for backward compatibility)
-  categoryId?: string // Category UUID (new preferred method)
+  categoryId?: string | string[] // Category UUID(s) - supports single or multiple
 }

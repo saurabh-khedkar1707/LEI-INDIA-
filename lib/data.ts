@@ -1,5 +1,13 @@
+/**
+ * @deprecated This file contains hardcoded category data and is no longer used.
+ * Categories are now managed dynamically through the admin panel and fetched from the database via API.
+ * 
+ * All components now fetch categories from /api/categories endpoint.
+ * This file is kept for reference only and can be removed in the future.
+ */
+
 // Products are now stored in the database and fetched via API
-// This file only contains static category data
+// Categories are managed through admin panel and fetched dynamically
 
 export const categories = [
   {

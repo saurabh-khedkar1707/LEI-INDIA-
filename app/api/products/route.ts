@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const isAdmin = req.cookies.get('admin_token')?.value
     // Allow higher limits for admin requests
     const maxLimit = isAdmin ? 10000 : 100
-    const limit = Math.min(maxLimit, Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20))
+    const limit = Math.min(maxLimit, Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10))
     
     // Cursor-based pagination: cursor is the last product id from previous page
     const cursor = searchParams.get('cursor')
@@ -33,17 +33,29 @@ export async function GET(req: NextRequest) {
     const connectorType = searchParams.get('connectorType')
     const code = searchParams.get('code')
     const degreeOfProtection = searchParams.get('degreeOfProtection')
+    const pinsParam = searchParams.get('pins')
+    const genderParam = searchParams.get('gender')
+    const inStockParam = searchParams.get('inStock')
     const search = searchParams.get('search')
 
     const filters: string[] = []
     const values: any[] = []
     let paramIndex = 1
 
-    // Category filtering: use categoryId with optimized index
-    if (categoryIdParam && isValidUUID(categoryIdParam)) {
-      filters.push(`"categoryId" = $${paramIndex}`)
-      values.push(categoryIdParam)
-      paramIndex++
+    // Category filtering: support multiple categoryIds
+    if (categoryIdParam) {
+      const categoryIds = categoryIdParam.split(',').map((id) => id.trim()).filter(Boolean).filter(isValidUUID)
+      if (categoryIds.length > 0) {
+        if (categoryIds.length === 1) {
+          filters.push(`"categoryId" = $${paramIndex}`)
+          values.push(categoryIds[0])
+          paramIndex++
+        } else {
+          const placeholders = categoryIds.map(() => `$${paramIndex++}`)
+          filters.push(`"categoryId" IN (${placeholders.join(',')})`)
+          values.push(...categoryIds)
+        }
+      }
     }
 
     // Cursor-based pagination: id > cursor for next page
@@ -89,13 +101,35 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (pinsParam) {
+      const pins = pinsParam.split(',').map((v) => parseInt(v.trim(), 10)).filter((v) => !isNaN(v))
+      if (pins.length > 0) {
+        const placeholders = pins.map(() => `$${paramIndex++}`)
+        filters.push(`pins IN (${placeholders.join(',')})`)
+        values.push(...pins)
+      }
+    }
+
+    if (genderParam) {
+      const list = genderParam.split(',').map((v) => v.trim()).filter(Boolean)
+      if (list.length > 0) {
+        const placeholders = list.map(() => `$${paramIndex++}`)
+        filters.push(`gender IN (${placeholders.join(',')})`)
+        values.push(...list)
+      }
+    }
+
+    if (inStockParam === 'true') {
+      filters.push(`"inStock" = true`)
+    }
+
     if (search) {
-      // Use trigram similarity for faster text search (requires pg_trgm extension)
+      // Search across name, sku, description, and mpn fields (handle NULL mpn)
       const searchTerm = search.trim()
       filters.push(
-        `(description % $${paramIndex}::text OR mpn % $${paramIndex + 1}::text OR description ILIKE $${paramIndex + 2} OR mpn ILIKE $${paramIndex + 3})`,
+        `(name ILIKE $${paramIndex} OR sku ILIKE $${paramIndex + 1} OR description ILIKE $${paramIndex + 2} OR (mpn IS NOT NULL AND mpn ILIKE $${paramIndex + 3}))`,
       )
-      values.push(searchTerm, searchTerm, `%${searchTerm}%`, `%${searchTerm}%`)
+      values.push(`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`)
       paramIndex += 4
     }
 

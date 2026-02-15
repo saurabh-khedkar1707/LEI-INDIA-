@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { ConnectorType, ConnectorCoding, PinCount, IPRating, ConnectorGender, Category } from '@/types'
+import { Category } from '@/types'
 
 interface FilterOptions {
   connectorTypes: string[]
@@ -51,13 +51,29 @@ export function FilterSidebar() {
         const response = await fetch(`${baseUrl}/api/products/filter-options`)
         if (response.ok) {
           const data = await response.json()
+          
+          // Debug logging in development
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Filter options received:', {
+              connectorTypes: data.connectorTypes?.length || 0,
+              codings: data.codings?.length || 0,
+              ipRatings: data.ipRatings?.length || 0,
+              pins: data.pins?.length || 0,
+              genders: data.genders?.length || 0,
+              pinsData: data.pins,
+              gendersData: data.genders,
+            })
+          }
+          
           setFilterOptions({
-            connectorTypes: data.connectorTypes || [],
-            codings: data.codings || [],
-            ipRatings: data.ipRatings || [],
-            pins: data.pins || [],
-            genders: data.genders || [],
+            connectorTypes: Array.isArray(data.connectorTypes) ? data.connectorTypes : [],
+            codings: Array.isArray(data.codings) ? data.codings : [],
+            ipRatings: Array.isArray(data.ipRatings) ? data.ipRatings : [],
+            pins: Array.isArray(data.pins) ? data.pins : [],
+            genders: Array.isArray(data.genders) ? data.genders : [],
           })
+        } else {
+          console.error('Failed to fetch filter options:', response.status, response.statusText)
         }
       } catch (error) {
         // Error handled silently - use empty arrays as fallback
@@ -99,33 +115,56 @@ export function FilterSidebar() {
   }
 
   const renderCategoryTree = (cats: Category[], level = 0) => {
-    return cats.map((category) => (
-      <div key={category.id} className={level > 0 ? 'ml-4' : ''}>
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={`category-${category.id}`}
-            checked={filters.categoryId === category.id || false}
-            onCheckedChange={(checked) =>
-              updateFilters({
-                categoryId: checked ? category.id : undefined,
-                category: undefined, // Clear slug when using categoryId
-              })
-            }
-          />
-          <Label
-            htmlFor={`category-${category.id}`}
-            className="text-sm font-normal cursor-pointer"
-          >
-            {category.name}
-          </Label>
-        </div>
-        {category.children && category.children.length > 0 && (
-          <div className="mt-1 space-y-1">
-            {renderCategoryTree(category.children, level + 1)}
+    const selectedCategoryIds = Array.isArray(filters.categoryId) 
+      ? filters.categoryId 
+      : filters.categoryId 
+        ? [filters.categoryId] 
+        : []
+    
+    return cats.map((category) => {
+      const isChecked = selectedCategoryIds.includes(category.id)
+      
+      return (
+        <div key={category.id} className={level > 0 ? 'ml-4' : ''}>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={`category-${category.id}`}
+              checked={isChecked}
+              onCheckedChange={(checked) => {
+                const currentIds = Array.isArray(filters.categoryId) 
+                  ? filters.categoryId 
+                  : filters.categoryId 
+                    ? [filters.categoryId] 
+                    : []
+                
+                let newCategoryIds: string[] | undefined
+                if (checked) {
+                  newCategoryIds = [...currentIds, category.id]
+                } else {
+                  newCategoryIds = currentIds.filter(id => id !== category.id)
+                }
+                
+                updateFilters({
+                  categoryId: newCategoryIds.length > 0 ? newCategoryIds : undefined,
+                  category: undefined, // Clear slug when using categoryId
+                })
+              }}
+            />
+            <Label
+              htmlFor={`category-${category.id}`}
+              className="text-sm font-normal cursor-pointer"
+            >
+              {category.name}
+            </Label>
           </div>
-        )}
-      </div>
-    ))
+          {category.children && category.children.length > 0 && (
+            <div className="mt-1 space-y-1">
+              {renderCategoryTree(category.children, level + 1)}
+            </div>
+          )}
+        </div>
+      )
+    })
   }
 
   const handleFilterChange = (
@@ -192,7 +231,7 @@ export function FilterSidebar() {
                   <div key={type} className="flex items-center space-x-2">
                     <Checkbox
                       id={`type-${type}`}
-                      checked={filters.connectorType?.includes(type as ConnectorType) || false}
+                      checked={filters.connectorType?.includes(type) || false}
                       onCheckedChange={(checked) =>
                         handleFilterChange('connectorType', type, checked as boolean)
                       }
@@ -222,7 +261,7 @@ export function FilterSidebar() {
                   <div key={coding} className="flex items-center space-x-2">
                     <Checkbox
                       id={`coding-${coding}`}
-                      checked={filters.coding?.includes(coding as ConnectorCoding) || false}
+                      checked={filters.coding?.includes(coding) || false}
                       onCheckedChange={(checked) =>
                         handleFilterChange('coding', coding, checked as boolean)
                       }
@@ -252,7 +291,7 @@ export function FilterSidebar() {
                   <div key={pin} className="flex items-center space-x-2">
                     <Checkbox
                       id={`pin-${pin}`}
-                      checked={filters.pins?.includes(pin as PinCount) || false}
+                      checked={filters.pins?.includes(pin) || false}
                       onCheckedChange={(checked) =>
                         handleFilterChange('pins', pin, checked as boolean)
                       }
@@ -282,7 +321,7 @@ export function FilterSidebar() {
                   <div key={rating} className="flex items-center space-x-2">
                     <Checkbox
                       id={`ip-${rating}`}
-                      checked={filters.ipRating?.includes(rating as IPRating) || false}
+                      checked={filters.ipRating?.includes(rating) || false}
                       onCheckedChange={(checked) =>
                         handleFilterChange('ipRating', rating, checked as boolean)
                       }
@@ -312,7 +351,7 @@ export function FilterSidebar() {
                   <div key={gender} className="flex items-center space-x-2">
                     <Checkbox
                       id={`gender-${gender}`}
-                      checked={filters.gender?.includes(gender as ConnectorGender) || false}
+                      checked={filters.gender?.includes(gender) || false}
                       onCheckedChange={(checked) =>
                         handleFilterChange('gender', gender, checked as boolean)
                       }

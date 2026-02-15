@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useCallback } from 'react'
-import { FilterState, ConnectorType, ConnectorCoding, PinCount, IPRating, ConnectorGender } from '@/types'
+import { FilterState } from '@/types'
 
 export function useProductFilters() {
   const searchParams = useSearchParams()
@@ -10,16 +10,18 @@ export function useProductFilters() {
   const pathname = usePathname()
 
   const getFilters = useCallback((): FilterState => {
+    const categoryIdParam = searchParams.get('categoryId')
     return {
-      connectorType: searchParams.get('connectorType')?.split(',').filter(Boolean) as ConnectorType[] | undefined,
-      coding: searchParams.get('coding')?.split(',').filter(Boolean) as ConnectorCoding[] | undefined,
-      pins: searchParams.get('pins')?.split(',').map(Number).filter(Boolean) as PinCount[] | undefined,
-      ipRating: searchParams.get('ipRating')?.split(',').filter(Boolean) as IPRating[] | undefined,
-      gender: searchParams.get('gender')?.split(',').filter(Boolean) as ConnectorGender[] | undefined,
+      // All filter values are dynamic from database - no type restrictions
+      connectorType: searchParams.get('connectorType')?.split(',').filter(Boolean) as string[] | undefined,
+      coding: searchParams.get('coding')?.split(',').filter(Boolean) as string[] | undefined,
+      pins: searchParams.get('pins')?.split(',').map(Number).filter((n) => !isNaN(n)) as number[] | undefined,
+      ipRating: searchParams.get('ipRating')?.split(',').filter(Boolean) as string[] | undefined,
+      gender: searchParams.get('gender')?.split(',').filter(Boolean) as string[] | undefined,
       inStock: searchParams.get('inStock') === 'true' ? true : undefined,
       search: searchParams.get('search') || undefined,
       category: searchParams.get('category') || undefined,
-      categoryId: searchParams.get('categoryId') || undefined,
+      categoryId: categoryIdParam ? (categoryIdParam.includes(',') ? categoryIdParam.split(',').filter(Boolean) : categoryIdParam) : undefined,
     }
   }, [searchParams])
 
@@ -31,6 +33,9 @@ export function useProductFilters() {
         current.delete(key)
       } else if (Array.isArray(value)) {
         current.set(key, value.join(','))
+      } else if (key === 'categoryId' && typeof value === 'string') {
+        // Handle categoryId as string or array
+        current.set(key, value)
       } else {
         current.set(key, String(value))
       }

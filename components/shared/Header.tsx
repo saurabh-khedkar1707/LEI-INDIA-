@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useRFQStore } from '@/store/rfq-store'
 import { useUserAuth } from '@/store/user-auth-store'
-import { categories } from '@/lib/data'
+import { Category } from '@/types'
 import { LogOut } from 'lucide-react'
 
 export function Header() {
@@ -23,12 +23,34 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMounted, setIsMounted] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
   const totalItems = useRFQStore((state) => state.getTotalItems())
   const { isAuthenticated, logout } = useUserAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    // Fetch categories dynamically from API
+    const fetchCategories = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || window.location.origin
+        const response = await fetch(`${baseUrl}/api/categories?limit=1000`)
+        if (response.ok) {
+          const data = await response.json()
+          const fetchedCategories = Array.isArray(data) ? data : (data.categories || [])
+          // Only show root categories (no parentId) in the header navigation
+          setCategories(fetchedCategories.filter((cat: Category) => !cat.parentId))
+        }
+      } catch (error) {
+        // Error handled silently - categories are optional for navigation
+        console.error('Failed to fetch categories for header', error)
+      }
+    }
+
+    fetchCategories()
   }, [])
 
   return (
