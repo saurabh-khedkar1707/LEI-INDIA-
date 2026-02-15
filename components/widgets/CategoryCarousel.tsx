@@ -1,15 +1,31 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Category } from '@/types'
 
 interface CategoryCarouselProps {
   categories: Category[]
+}
+
+// Helper function to get full image URL
+function getImageUrl(imagePath: string | undefined): string {
+  if (!imagePath) return ''
+  // If it's already a full URL, return as-is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+  // If it's a relative path, prepend API URL
+  if (imagePath.startsWith('/')) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+    return `${apiUrl}${imagePath}`
+  }
+  return imagePath
 }
 
 export function CategoryCarousel({ categories }: CategoryCarouselProps) {
@@ -75,14 +91,7 @@ export function CategoryCarousel({ categories }: CategoryCarouselProps) {
               className="group block"
             >
               <Card className="h-full hover:shadow-lg transition-all duration-300 group-hover:scale-105 overflow-hidden">
-                <div className="relative h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 overflow-hidden">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <h3 className="text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors">
-                      {category.name}
-                    </h3>
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+                <CategoryImage category={category} />
                 <CardHeader>
                   <CardTitle className="group-hover:text-primary transition-colors">
                     {category.name}
@@ -107,6 +116,34 @@ export function CategoryCarousel({ categories }: CategoryCarouselProps) {
       >
         <ChevronRight className="h-5 w-5" />
       </Button>
+    </div>
+  )
+}
+
+// Separate component for category image to manage error state per category
+function CategoryImage({ category }: { category: Category }) {
+  const [imageError, setImageError] = useState(false)
+  const imageUrl = getImageUrl(category.image)
+
+  return (
+    <div className="relative h-48 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 overflow-hidden">
+      {imageUrl && !imageError ? (
+        <Image
+          src={imageUrl}
+          alt={category.name}
+          fill
+          className="object-cover group-hover:scale-110 transition-transform duration-300"
+          sizes="(max-width: 768px) 100vw, 300px"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h3 className="text-2xl font-bold text-gray-900 group-hover:text-primary transition-colors">
+            {category.name}
+          </h3>
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
     </div>
   )
 }

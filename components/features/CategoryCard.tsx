@@ -12,8 +12,24 @@ interface CategoryCardProps {
   category: Category
 }
 
+// Helper function to get full image URL
+function getImageUrl(imagePath: string | undefined): string {
+  if (!imagePath) return ''
+  // If it's already a full URL, return as-is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath
+  }
+  // If it's a relative path, prepend API URL
+  if (imagePath.startsWith('/')) {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || ''
+    return `${apiUrl}${imagePath}`
+  }
+  return imagePath
+}
+
 export function CategoryCard({ category }: CategoryCardProps) {
   const [imageError, setImageError] = useState(false)
+  const imageUrl = getImageUrl(category.image)
 
   return (
     <motion.div
@@ -26,9 +42,9 @@ export function CategoryCard({ category }: CategoryCardProps) {
       <Link href={`/products?category=${category.slug}`}>
         <Card className="h-full flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
           <div className="relative h-48 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 overflow-hidden">
-            {category.image && !imageError ? (
+            {imageUrl && !imageError ? (
               <Image
-                src={category.image}
+                src={imageUrl}
                 alt={category.name}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-300"
