@@ -1,9 +1,7 @@
 import type { Metadata } from "next"
 import { Header } from "@/components/shared/Header"
 import { Footer } from "@/components/shared/Footer"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Globe, Users, Award, Target, Zap } from "lucide-react"
 import Link from "next/link"
 import { pgPool } from "@/lib/pg"
 
@@ -13,36 +11,6 @@ export const metadata: Metadata = {
 }
 
 export const dynamic = 'force-dynamic'
-
-const values = [
-  {
-    icon: Target,
-    title: "Quality First",
-    description: "We maintain the highest standards in all our products and services, ensuring reliability and performance.",
-  },
-  {
-    icon: Users,
-    title: "Customer Focus",
-    description: "Our customers are at the heart of everything we do. We build lasting relationships through exceptional service.",
-  },
-  {
-    icon: Zap,
-    title: "Innovation",
-    description: "We continuously innovate to bring cutting-edge solutions that meet evolving industrial needs.",
-  },
-  {
-    icon: Award,
-    title: "Excellence",
-    description: "We strive for excellence in every aspect of our business, from product quality to customer support.",
-  },
-]
-
-const stats = [
-  { label: "Years of Experience", value: "15+" },
-  { label: "Global Partners", value: "50+" },
-  { label: "Products", value: "500+" },
-  { label: "Happy Customers", value: "1000+" },
-]
 
 async function getAboutUsContent() {
   try {
@@ -55,216 +23,70 @@ async function getAboutUsContent() {
     )
     return result.rows
   } catch (error) {
-    // Silently return empty array - page will show default content
+    console.error('Failed to fetch about us content:', error)
     return []
   }
 }
 
-function getContentBySection(contents: any[], section: string) {
-  return contents.find(c => c.section === section)
+function hasContent(content: any): boolean {
+  return content && 
+         typeof content.content === 'string' && 
+         content.content.trim().length > 0
 }
 
-function getOtherSections(contents: any[], knownSections: string[]) {
-  return contents
-    .filter(c => !knownSections.includes(c.section))
-    .sort((a, b) => a.displayOrder - b.displayOrder)
+function getSectionClassName(index: number, total: number): string {
+  // Alternate background colors for visual separation
+  if (index === 0) {
+    return "bg-gradient-to-br from-primary/10 to-primary/5"
+  }
+  return index % 2 === 0 ? "bg-white" : "bg-gray-50"
 }
 
 export default async function AboutPage() {
   const contents = await getAboutUsContent()
-  const heroContent = getContentBySection(contents, 'hero')
-  const storyContent = getContentBySection(contents, 'story')
-  const missionContent = getContentBySection(contents, 'mission')
-  const visionContent = getContentBySection(contents, 'vision')
-  const otherSections = getOtherSections(contents, ['hero', 'story', 'mission', 'vision'])
+  const validContents = contents.filter(hasContent)
 
   return (
     <>
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl mx-auto text-center">
-              {heroContent ? (
-                <>
-                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                    {heroContent.title || 'About LEI Indias'}
-                  </h1>
-                  <div 
-                    className="text-xl text-gray-600 mb-8 prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: heroContent.content }}
-                  />
-                </>
-              ) : (
-                <>
-                  <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                    About LEI Indias
-                  </h1>
-                  <p className="text-xl text-gray-600 mb-8">
-                    Leading the way in industrial connectivity solutions
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Company Story */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-              {storyContent ? (
-                <>
-                  {storyContent.title && (
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                      {storyContent.title}
-                    </h2>
-                  )}
-                  <div 
-                    className="prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: storyContent.content }}
-                  />
-                </>
-              ) : (
-                <>
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                    Our Story
-                  </h2>
-                  <div className="prose prose-lg max-w-none">
-                    <p className="text-gray-600 mb-4">
-                      LEI Indias was founded with a vision to provide high-quality industrial connectivity solutions to businesses worldwide. Over the years, we have established ourselves as a trusted partner in the industrial automation and connectivity space.
-                    </p>
-                    <p className="text-gray-600 mb-4">
-                      We specialize in M12, M8, and RJ45 industrial connectors, PROFINET products, and custom cable solutions. Our commitment to quality, technical excellence, and customer service has made us a preferred supplier for leading industrial automation companies.
-                    </p>
-                    <p className="text-gray-600">
-                      Today, we serve customers across multiple industries, from manufacturing and automation to telecommunications and energy. Our global network of partners ensures that we can deliver solutions wherever they&apos;re needed, with no minimum order quantities and comprehensive technical support.
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Stats */}
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-gray-600">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Our Values */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Our Values
-              </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                The principles that guide everything we do
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {values.map((value, index) => {
-                const Icon = value.icon
-                return (
-                  <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <Icon className="h-8 w-8 text-primary" />
-                      </div>
-                      <CardTitle>{value.title}</CardTitle>
-                      <CardDescription>{value.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Mission & Vision */}
-        <section className="py-16 bg-gray-50">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-6 w-6 text-primary" />
-                    {missionContent?.title || 'Our Mission'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {missionContent ? (
-                    <div 
-                      className="text-gray-600 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: missionContent.content }}
-                    />
-                  ) : (
-                    <p className="text-gray-600">
-                      To provide world-class industrial connectivity solutions that enable our customers to achieve their automation goals. We are committed to quality, innovation, and exceptional customer service in everything we do.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="h-6 w-6 text-primary" />
-                    {visionContent?.title || 'Our Vision'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {visionContent ? (
-                    <div 
-                      className="text-gray-600 prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: visionContent.content }}
-                    />
-                  ) : (
-                    <p className="text-gray-600">
-                      To become the global leader in industrial connectivity solutions, recognized for our technical expertise, product quality, and commitment to customer success. We envision a future where seamless connectivity drives industrial innovation.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Additional Content Sections */}
-        {otherSections.length > 0 && (
-          <section className="py-16 bg-white">
+        {validContents.length === 0 ? (
+          /* Empty State */
+          <section className="bg-gradient-to-br from-primary/10 to-primary/5 py-16">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="max-w-4xl mx-auto space-y-8">
-                {otherSections.map((section) => (
-                  <Card key={section.id}>
-                    <CardHeader>
-                      <CardTitle>
-                        {section.title || section.section.charAt(0).toUpperCase() + section.section.slice(1)}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div 
-                        className="prose prose-lg max-w-none"
-                        dangerouslySetInnerHTML={{ __html: section.content }}
-                      />
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="max-w-3xl mx-auto text-center">
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                  About Us
+                </h1>
+                <p className="text-xl text-gray-600 mb-8">
+                  Content coming soon. Please check back later.
+                </p>
               </div>
             </div>
           </section>
+        ) : (
+          validContents.map((content, index) => {
+            const sectionClass = getSectionClassName(index, validContents.length)
+            const isFirstSection = index === 0
+
+            return (
+              <section key={content.id} className={`py-16 ${sectionClass}`}>
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className={`max-w-4xl mx-auto ${isFirstSection ? 'text-center' : ''}`}>
+                    {content.title && content.title.trim() && (
+                      <h2 className={`${isFirstSection ? 'text-4xl md:text-5xl' : 'text-3xl md:text-4xl'} font-bold text-gray-900 mb-6`}>
+                        {content.title}
+                      </h2>
+                    )}
+                    <div 
+                      className={`${isFirstSection ? 'text-xl text-gray-600 prose prose-lg' : 'prose prose-lg'} max-w-none`}
+                      dangerouslySetInnerHTML={{ __html: content.content }}
+                    />
+                  </div>
+                </div>
+              </section>
+            )
+          })
         )}
 
         {/* CTA Section */}

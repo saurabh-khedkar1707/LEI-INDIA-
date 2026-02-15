@@ -267,14 +267,14 @@ export default function AdminAboutUsPage() {
               <Input
                 id="section"
                 {...register('section')}
-                placeholder="e.g., hero, story, mission, vision"
+                placeholder="e.g., hero, story, mission, vision, values, stats"
                 disabled={!!editingContent}
               />
               {errors.section && (
                 <p className="text-sm text-red-500">{errors.section.message}</p>
               )}
               <p className="text-sm text-gray-500 mt-1">
-                Unique identifier for this content section (cannot be changed after creation)
+                Unique identifier for this content section (cannot be changed after creation). Sections are displayed in order based on Display Order.
               </p>
             </div>
 

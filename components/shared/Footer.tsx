@@ -82,6 +82,16 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/partners" className="hover:text-white transition-colors">
+                  Principal Partners
+                </Link>
+              </li>
+              <li>
+                <Link href="/distributors" className="hover:text-white transition-colors">
+                  Authorised Distributors
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-white transition-colors">
                   Privacy Policy
                 </Link>

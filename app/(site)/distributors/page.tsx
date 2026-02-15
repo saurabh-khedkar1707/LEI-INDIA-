@@ -9,55 +9,55 @@ import Image from "next/image"
 import { pgPool } from "@/lib/pg"
 
 export const metadata: Metadata = {
-  title: "Principal Partners",
-  description: "Our network of principal partners ensures reliable supply and support worldwide.",
+  title: "Authorised Distributors",
+  description: "Our network of authorised distributors ensures reliable supply and support worldwide.",
 }
 
 export const dynamic = 'force-dynamic'
 
-const partnerBenefits = [
+const distributorBenefits = [
   {
-    title: "Global Network",
-    description: "Access to our extensive network of partners across 50+ countries ensures reliable supply and local support.",
-    icon: Globe,
+    title: "Authorised & Certified",
+    description: "All our distributors are officially authorised and certified to maintain our high standards of quality and service.",
+    icon: CheckCircle2,
   },
   {
-    title: "Local Expertise",
-    description: "Our partners provide local market knowledge, language support, and regional compliance expertise.",
+    title: "Local Presence",
+    description: "Our distributors provide local market knowledge, language support, and regional compliance expertise.",
     icon: MapPin,
   },
   {
     title: "Quality Assurance",
-    description: "All partners are vetted and certified to maintain our high standards of quality and service.",
-    icon: CheckCircle2,
+    description: "All distributors are vetted and certified to maintain our high standards of quality and service.",
+    icon: Building2,
   },
   {
-    title: "Technical Support",
-    description: "Comprehensive technical support available through our global partner network.",
-    icon: Building2,
+    title: "Global Network",
+    description: "Access to our extensive network of authorised distributors across multiple regions ensures reliable supply.",
+    icon: Globe,
   },
 ]
 
-async function getPrincipalPartners() {
+async function getAuthorisedDistributors() {
   try {
     const result = await pgPool.query(
       `
-      SELECT id, "companyName", logo, "companyDetails", email, phone, address, website,
+      SELECT id, "companyName", logo, email, phone, address, website,
              "displayOrder", active, "createdAt", "updatedAt"
-      FROM "PrincipalPartner"
+      FROM "AuthorisedDistributor"
       WHERE active = true
       ORDER BY "displayOrder" ASC, "createdAt" DESC
       `,
     )
     return result.rows
   } catch (error) {
-    console.error('Failed to fetch principal partners:', error)
+    console.error('Failed to fetch authorised distributors:', error)
     return []
   }
 }
 
-export default async function PrincipalPartnersPage() {
-  const partners = await getPrincipalPartners()
+export default async function AuthorisedDistributorsPage() {
+  const distributors = await getAuthorisedDistributors()
 
   return (
     <>
@@ -68,28 +68,28 @@ export default async function PrincipalPartnersPage() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Principal Partners
+                Authorised Distributors
               </h1>
               <p className="text-xl text-gray-600 mb-8">
-                A worldwide network of trusted partners delivering excellence
+                A trusted network of authorised distributors delivering excellence
               </p>
             </div>
           </div>
         </section>
 
-        {/* Partner Benefits */}
+        {/* Distributor Benefits */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                Why Our Global Network Matters
+                Why Choose Our Authorised Distributors
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Our partners enable us to serve customers worldwide with local expertise
+                Our authorised distributors enable us to serve customers worldwide with local expertise
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {partnerBenefits.map((benefit, index) => {
+              {distributorBenefits.map((benefit, index) => {
                 const Icon = benefit.icon
                 return (
                   <Card key={index} className="text-center hover:shadow-lg transition-shadow">
@@ -107,67 +107,62 @@ export default async function PrincipalPartnersPage() {
           </div>
         </section>
 
-        {/* Principal Partners List */}
-        {partners.length > 0 && (
+        {/* Authorised Distributors List */}
+        {distributors.length > 0 && (
           <section className="py-16 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                  Our Principal Partners
+                  Our Authorised Distributors
                 </h2>
                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                  Trusted partners delivering excellence worldwide
+                  Trusted distributors delivering excellence worldwide
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                {partners.map((partner) => (
-                  <Card key={partner.id} className="hover:shadow-lg transition-shadow">
+                {distributors.map((distributor) => (
+                  <Card key={distributor.id} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
-                      {partner.logo && (
+                      {distributor.logo && (
                         <div className="mb-4 flex justify-center">
                           <Image
-                            src={partner.logo}
-                            alt={partner.companyName}
+                            src={distributor.logo}
+                            alt={distributor.companyName}
                             width={120}
                             height={60}
                             className="object-contain"
                           />
                         </div>
                       )}
-                      <CardTitle className="text-xl">{partner.companyName}</CardTitle>
-                      {partner.companyDetails && typeof partner.companyDetails === 'string' && partner.companyDetails.trim().length > 0 && (
-                        <CardDescription className="mt-2 text-gray-600">
-                          {partner.companyDetails.trim()}
-                        </CardDescription>
-                      )}
+                      <CardTitle className="text-xl">{distributor.companyName}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {partner.email && (
+                      {distributor.email && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Mail className="h-4 w-4" />
-                          <a href={`mailto:${partner.email}`} className="hover:text-primary">
-                            {partner.email}
+                          <a href={`mailto:${distributor.email}`} className="hover:text-primary">
+                            {distributor.email}
                           </a>
                         </div>
                       )}
-                      {partner.phone && (
+                      {distributor.phone && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Phone className="h-4 w-4" />
-                          <a href={`tel:${partner.phone}`} className="hover:text-primary">
-                            {partner.phone}
+                          <a href={`tel:${distributor.phone}`} className="hover:text-primary">
+                            {distributor.phone}
                           </a>
                         </div>
                       )}
-                      {partner.address && (
+                      {distributor.address && (
                         <div className="flex items-start gap-2 text-sm text-gray-600">
                           <MapPin className="h-4 w-4 mt-0.5" />
-                          <span>{partner.address}</span>
+                          <span>{distributor.address}</span>
                         </div>
                       )}
-                      {partner.website && (
+                      {distributor.website && (
                         <div className="pt-2">
                           <Button asChild variant="outline" size="sm" className="w-full">
-                            <a href={partner.website} target="_blank" rel="noopener noreferrer">
+                            <a href={distributor.website} target="_blank" rel="noopener noreferrer">
                               Visit Website
                               <ExternalLink className="h-4 w-4 ml-2" />
                             </a>
@@ -182,7 +177,7 @@ export default async function PrincipalPartnersPage() {
           </section>
         )}
 
-        {/* Become a Partner */}
+        {/* Become a Distributor */}
         <section className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
@@ -190,18 +185,18 @@ export default async function PrincipalPartnersPage() {
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <Handshake className="h-6 w-6 text-primary" />
-                    <CardTitle className="text-2xl">Become a Principal Partner</CardTitle>
+                    <CardTitle className="text-2xl">Become an Authorised Distributor</CardTitle>
                   </div>
                   <CardDescription>
-                    Join our network of trusted partners and help us serve customers worldwide
+                    Join our network of trusted authorised distributors and help us serve customers worldwide
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-gray-600">
-                    We&apos;re continuously expanding our global partner network. If you&apos;re a distributor, reseller, or service provider in the industrial connectivity space, we&apos;d love to explore a partnership.
+                    We&apos;re continuously expanding our global distributor network. If you&apos;re a distributor, reseller, or service provider in the industrial connectivity space, we&apos;d love to explore a partnership.
                   </p>
                   <div>
-                    <p className="font-semibold mb-2">What we look for in partners:</p>
+                    <p className="font-semibold mb-2">What we look for in distributors:</p>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
                       <li>Established presence in your local market</li>
                       <li>Experience with industrial connectivity products</li>
@@ -213,7 +208,7 @@ export default async function PrincipalPartnersPage() {
                   </div>
                   <div className="pt-4">
                     <Button asChild size="lg">
-                      <Link href="/contact">Contact Us About Partnership</Link>
+                      <Link href="/contact">Contact Us About Distribution</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -226,10 +221,10 @@ export default async function PrincipalPartnersPage() {
         <section className="py-16 bg-primary text-primary-foreground">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Find a Partner Near You
+              Find a Distributor Near You
             </h2>
             <p className="text-lg mb-8 opacity-90">
-              Contact us to connect with a partner in your region
+              Contact us to connect with an authorised distributor in your region
             </p>
             <Button asChild variant="secondary" size="lg">
               <Link href="/contact">Contact Us</Link>
