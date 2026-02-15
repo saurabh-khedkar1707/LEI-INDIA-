@@ -456,7 +456,7 @@ export default function AdminHeroSlidesPage() {
                             src={`${process.env.NEXT_PUBLIC_API_URL || ''}${slide.image}`}
                             alt={slide.title}
                             fill
-                            className="object-cover rounded border"
+                            className="object-contain rounded border"
                           />
                         </div>
                       </TableCell>
@@ -568,7 +568,7 @@ export default function AdminHeroSlidesPage() {
                       src={`${process.env.NEXT_PUBLIC_API_URL || ''}${slideImage}`}
                       alt="Preview"
                       fill
-                      className="object-cover rounded border"
+                      className="object-contain rounded border"
                     />
                   </div>
                 )}

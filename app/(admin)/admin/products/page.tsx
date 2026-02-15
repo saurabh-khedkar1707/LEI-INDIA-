@@ -122,7 +122,7 @@ function ProductImagePreview({ url, index, onRemove }: { url: string; index: num
           src={imageSrc}
           alt={`Product image ${index + 1}`}
           fill
-          className="object-cover"
+          className="object-contain"
           onError={() => setImageError(true)}
           unoptimized={imageSrc.startsWith('/')}
         />

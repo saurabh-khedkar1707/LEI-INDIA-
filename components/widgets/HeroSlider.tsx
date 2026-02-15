@@ -166,7 +166,7 @@ export function HeroSlider() {
             src={imageSrc}
             alt={currentSlideData.title}
             fill
-            className="object-cover"
+            className="object-contain"
             priority
             unoptimized={!isFullUrl}
           />

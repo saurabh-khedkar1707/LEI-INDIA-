@@ -66,7 +66,7 @@ export function ProductImageGallery({ images, mpn }: ProductImageGalleryProps) {
             src={mainImageSrc}
             alt={mpn || 'Product'}
             fill
-            className="object-cover"
+            className="object-contain"
             priority
             unoptimized={!isMainImageFullUrl}
           />
@@ -95,7 +95,7 @@ export function ProductImageGallery({ images, mpn }: ProductImageGalleryProps) {
                     src={imageSrc}
                     alt={`${mpn || 'Product'} ${index + 2}`}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     unoptimized={!isFullUrl}
                   />
                 </div>

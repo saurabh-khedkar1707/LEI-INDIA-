@@ -112,7 +112,7 @@ export function ProductDetailsModal({ productId, open, onOpenChange }: ProductDe
                   src={getImageSrc(product.images[0])}
                   alt={product.mpn || product.description.substring(0, 50) || 'Product'}
                   fill
-                  className="object-cover"
+                  className="object-contain"
                   unoptimized={!getImageSrc(product.images[0]).startsWith('http')}
                 />
               </div>
@@ -124,7 +124,7 @@ export function ProductDetailsModal({ productId, open, onOpenChange }: ProductDe
                         src={getImageSrc(image)}
                         alt={`${product.mpn || 'Product'} ${index + 2}`}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                         unoptimized={!getImageSrc(image).startsWith('http')}
                       />
                     </div>

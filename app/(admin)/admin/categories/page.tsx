@@ -425,7 +425,7 @@ export default function AdminCategoriesPage() {
                             src={`${process.env.NEXT_PUBLIC_API_URL || ''}${category.image}`}
                             alt={category.name}
                             fill
-                            className="object-cover rounded border"
+                            className="object-contain rounded border"
                           />
                         </div>
                       ) : (
@@ -570,7 +570,7 @@ export default function AdminCategoriesPage() {
                       src={`${process.env.NEXT_PUBLIC_API_URL || ''}${categoryImage}`}
                       alt="Category"
                       fill
-                      className="object-cover rounded border"
+                      className="object-contain rounded border"
                     />
                     <Button
                       type="button"

@@ -564,7 +564,7 @@ export default function AdminCompanyPoliciesPage() {
                                   src={`${process.env.NEXT_PUBLIC_API_URL || ''}${attachment.url}`}
                                   alt={attachment.filename || 'Attachment'}
                                   fill
-                                  className="object-cover rounded"
+                                  className="object-contain rounded"
                                 />
                               </div>
                               <div className="flex-1 min-w-0">

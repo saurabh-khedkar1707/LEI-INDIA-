@@ -86,7 +86,7 @@ export default function BlogPage() {
                         src={post.image}
                         alt={post.title}
                         fill
-                        className="object-cover"
+                        className="object-contain"
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">

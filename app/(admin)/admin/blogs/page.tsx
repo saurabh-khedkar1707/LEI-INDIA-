@@ -394,7 +394,7 @@ export default function AdminBlogsPage() {
                       src={`${process.env.NEXT_PUBLIC_API_URL || ''}${blogImage}`}
                       alt="Blog"
                       fill
-                      className="object-cover rounded border"
+                      className="object-contain rounded border"
                     />
                     <Button
                       type="button"
