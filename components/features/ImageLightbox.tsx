@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import {
   Dialog,
@@ -45,6 +45,14 @@ export function ImageLightbox({ images, currentIndex, open, onOpenChange }: Imag
     }
   }, [currentIndex])
 
+  const handlePrevious = useCallback(() => {
+    setActiveIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
+  }, [images.length])
+
+  const handleNext = useCallback(() => {
+    setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
+  }, [images.length])
+
   useEffect(() => {
     if (!open) {
       return
@@ -62,15 +70,7 @@ export function ImageLightbox({ images, currentIndex, open, onOpenChange }: Imag
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open, activeIndex, images.length])
-
-  const handlePrevious = () => {
-    setActiveIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-  }
-
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-  }
+  }, [open, handlePrevious, handleNext, onOpenChange])
 
   if (!open || images.length === 0 || currentIndex === null) {
     return null

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { log } from './logger'
 import { getRedisClient, isRedisConnected } from './redis'
 
+// Common interface for rate limiters
+interface RateLimiter {
+  limit(identifier: string): Promise<{ success: boolean; limit: number; remaining: number; reset: number }>
+}
+
 // In-memory rate limiter implementation (fallback when Redis is unavailable)
-class InMemoryRateLimiter {
+class InMemoryRateLimiter implements RateLimiter {
   private requests: Map<string, number[]> = new Map()
   private readonly windowMs: number
   private readonly maxRequests: number
@@ -63,7 +68,7 @@ class InMemoryRateLimiter {
 }
 
 // Redis-based rate limiter using sliding window algorithm
-class RedisRateLimiter {
+class RedisRateLimiter implements RateLimiter {
   private readonly maxRequests: number
   private readonly windowSeconds: number
 
@@ -181,7 +186,7 @@ export async function rateLimit(
   // Determine which rate limiter to use based on endpoint
   const pathname = req.nextUrl.pathname
   
-  let limiter: InMemoryRateLimiter
+  let limiter: RateLimiter
   if (pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/reset-password')) {
     limiter = authRateLimiter
   } else if (pathname.includes('/admin')) {
@@ -193,7 +198,7 @@ export async function rateLimit(
   // Get identifier
   const id = identifier ? identifier(req) : getIdentifier(req)
 
-  // Check rate limit using in-memory limiter
+  // Check rate limit
   const result = await limiter.limit(id)
 
   if (!result.success) {
